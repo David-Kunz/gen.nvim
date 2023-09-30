@@ -31,11 +31,12 @@ M.run_llm = function(prompt)
                                                            end_pos[3] - 1, {}),
                                  '\n')
     local text = vim.fn.shellescape(lines)
-    local cmd = 'ollama run mistral:instruct """' .. prompt .. '""" """' .. content .. '"""'
+    local instruction = string.gsub(M.prompts[prompt], "%$text", content)
+    local cmd = 'ollama run mistral:instruct """' .. instruction .. '"""'
     if result_buffer then vim.cmd('bd' .. result_buffer) end
     -- vim.cmd('vs enew')
     local width = math.floor(vim.o.columns * 0.9) -- 90% of the current editor's width
-    local height = math.floor(vim.o.lines * 0.9) 
+    local height = math.floor(vim.o.lines * 0.9)
     local row = math.floor((vim.o.lines - height) / 2)
     local col = math.floor((vim.o.columns - width) / 2)
 
@@ -66,8 +67,24 @@ M.run_llm = function(prompt)
     })
 end
 
+M.prompts = {
+  Summarize = "Summarize the following text: $text"
+  Grammar = "Fix the grammar in the following text: $text"
+}
+
+
 vim.api.nvim_create_user_command('Gen', function()
-    M.run_llm("Summarize the following text:")
+    local keysTable = {}
+
+    for key, _ in pairs(M.prompts) do
+        if type(key) == "string" then
+            table.insert(keysTable, key)
+        end
+    end
+    vim.ui.select(keysTable, { prompt = 'Prompt:' }, function(item, idx)
+        M.run_llm(item)
+    end)
+
 end, {range = true})
 
 return M
