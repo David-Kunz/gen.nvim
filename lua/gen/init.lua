@@ -40,19 +40,18 @@ M.run_llm = function(prompt)
     local row = math.floor((vim.o.lines - height) / 2)
     local col = math.floor((vim.o.columns - width) / 2)
 
-    -- local opts = {
-    --     relative = 'editor',
-    --     width = width,
-    --     height = height,
-    --     row = row,
-    --     col = col,
-    --     style = 'minimal',
-    --     border = 'single'
-    -- }
-    -- local buf = vim.api.nvim_create_buf(false, true)
-    -- local float_win = vim.api.nvim_open_win(buf, true, opts)
+    local opts = {
+        relative = 'editor',
+        width = width,
+        height = height,
+        row = row,
+        col = col,
+        style = 'minimal',
+        border = 'single'
+    }
+    local buf = vim.api.nvim_create_buf(false, true)
+    local float_win = vim.api.nvim_open_win(buf, true, opts)
 
-    vim.cmd('vs enew')
 
     result_buffer = vim.fn.bufnr('%')
     local term_id = vim.fn.termopen(cmd .. '\n', {
