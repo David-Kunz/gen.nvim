@@ -104,7 +104,7 @@ end
 
 M.prompts = {
     Summarize = {prompt = "Summarize the following text: $text", replace = true},
-    FixGrammar = {
+    Fix_Grammar = {
         prompt = "Fix the grammar in the following text: $text",
         replace = true
     },
@@ -115,7 +115,7 @@ M.prompts = {
 vim.api.nvim_create_user_command('Gen', function()
     local promptKeys = {}
     for key, _ in pairs(M.prompts) do table.insert(promptKeys, key) end
-    vim.ui.select(promptKeys, {prompt = 'Prompt:'},
+    vim.ui.select(promptKeys, {prompt = 'Prompt:', format_item = function(item) return table.concat(vim.split(item, '_'), ' ') end},
                   function(item, idx) M.run_llm(M.prompts[item]) end)
 
 end, {range = true})
