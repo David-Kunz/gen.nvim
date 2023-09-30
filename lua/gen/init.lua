@@ -40,20 +40,22 @@ M.run_llm = function(prompt)
     local row = math.floor((vim.o.lines - height) / 2)
     local col = math.floor((vim.o.columns - width) / 2)
 
-    local opts = {
-        relative = 'editor',
-        width = width,
-        height = height,
-        row = row,
-        col = col,
-        style = 'minimal',
-        border = 'single'
-    }
-    local buf = vim.api.nvim_create_buf(false, true)
-    local float_win = vim.api.nvim_open_win(buf, true, opts)
+    -- local opts = {
+    --     relative = 'editor',
+    --     width = width,
+    --     height = height,
+    --     row = row,
+    --     col = col,
+    --     style = 'minimal',
+    --     border = 'single'
+    -- }
+    -- local buf = vim.api.nvim_create_buf(false, true)
+    -- local float_win = vim.api.nvim_open_win(buf, true, opts)
+
+    vim.cmd('vs enew')
 
     result_buffer = vim.fn.bufnr('%')
-    vim.fn.termopen(cmd .. '\n', {
+    local term_id = vim.fn.termopen(cmd .. '\n', {
         on_exit = function()
             local lines = vim.api
                               .nvim_buf_get_lines(result_buffer, 0, -1, false)
@@ -65,25 +67,19 @@ M.run_llm = function(prompt)
             result_buffer = nil
         end
     })
+
 end
 
 M.prompts = {
-  Summarize = "Summarize the following text: $text"
-  Grammar = "Fix the grammar in the following text: $text"
+    Summarize = "Summarize the following text: $text",
+    FixGrammar = "Fix the grammar in the following text: $text"
 }
 
-
 vim.api.nvim_create_user_command('Gen', function()
-    local keysTable = {}
-
-    for key, _ in pairs(M.prompts) do
-        if type(key) == "string" then
-            table.insert(keysTable, key)
-        end
-    end
-    vim.ui.select(keysTable, { prompt = 'Prompt:' }, function(item, idx)
-        M.run_llm(item)
-    end)
+    local promptKeys = {}
+    for key, _ in pairs(M.prompts) do table.insert(promptKeys, key) end
+    vim.ui.select(promptKeys, {prompt = 'Prompt:'},
+                  function(item, idx) M.run_llm(item) end)
 
 end, {range = true})
 
