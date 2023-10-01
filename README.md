@@ -25,8 +25,9 @@ vim.keymap.set('v', '<leader>]', ':Gen Enhance_Grammar<CR>')
 
 ## Options
 
-All prompts are defined in `require('gen').prompts`, you can enhance or modify the prompts.
+All prompts are defined in `require('gen').prompts`, you can enhance or modify them.
 
+Example:
 ```lua
 table.insert(require('gen').prompts, {
     Elaborate_Text = {
@@ -46,6 +47,7 @@ You can use the following properties per prompt:
 - `prompt`: Prompt which can use the following placeholders:
    - `$text`: Visually selected text
    - `$filetype`: Filetype of the buffer (e.g. `javascript`)
+   - `$input1`: Additional user input (as well as `$input2 ... $input5`)
 - `replace`: Shall the selected text be replaced?
 - `extract`: Regular expression used to extract the generated result
 
