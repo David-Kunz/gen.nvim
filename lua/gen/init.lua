@@ -1,3 +1,4 @@
+local prompts = require('gen.prompts')
 local M = {}
 
 local curr_buffer = nil
@@ -50,8 +51,13 @@ local function get_window_options()
     }
 end
 
+M.command = 'ollama run $model """$instruction"""'
+
 M.exec = function(options)
-    local opts = vim.tbl_deep_extend('force', { model = 'mistral:instruct' }, options)
+    local opts = vim.tbl_deep_extend('force', {
+        model = 'mistral:instruct',
+        command = M.command
+    }, options)
     pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
     curr_buffer = vim.fn.bufnr('%')
     if vim.fn.visualmode() == 'v' or vim.fn.visualmode() == 'V' then
@@ -89,9 +95,10 @@ M.exec = function(options)
 
     local instruction = substitute_placeholders(opts.prompt)
     local extractor = substitute_placeholders(opts.extract)
-    local cmd = 'ollama run ' .. opts.model .. ' """' .. instruction .. '"""'
+    local cmd = opts.command
+    cmd = string.gsub(cmd, "%$instruction", instruction)
+    cmd = string.gsub(cmd, "%$model", opts.model)
     if result_buffer then vim.cmd('bd' .. result_buffer) end
-    -- vim.cmd('vs enew')
     local win_opts = get_window_options()
     result_buffer = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_option(result_buffer, 'filetype', 'markdown')
@@ -132,45 +139,7 @@ M.exec = function(options)
 
 end
 
-M.prompts = {
-    Generate = {prompt = "$input1", replace = true},
-    Summarize = {prompt = "Summarize the following text:\n\n```\n$text\n```"},
-    Ask = {prompt = "Regarding the following text, $input1:\n\n```\n$text\n```"},
-    Enhance_Grammar = {
-        prompt = "Enhance the grammar and spelling in the following text:\n\n```\n$text\n```",
-        replace = true
-    },
-    Enhance_Wording = {
-        prompt = "Enhance the wording in the following text:\n\n```\n$text\n```",
-        replace = true
-    },
-    Make_Concise = {
-        prompt = "Make the following text as simple and concise as possible:\n\n```\n$text\n```",
-        replace = true
-    },
-    Make_List = {
-        prompt = "Render the following text as a markdown list:\n\n```\n$text\n```",
-        replace = true
-    },
-    Make_Table = {
-        prompt = "Render the following text as a markdown table:\n\n```\n$text\n```",
-        replace = true
-    },
-    Review_Code = {
-        prompt = "Review the following code and make concise suggestions:\n\n```$filetype\n$text\n```"
-    },
-    Enhance_Code = {
-        prompt = "Enhance the following code, only ouput the result in format ```$filetype\n...\n```:\n\n```$filetype\n$text\n```",
-        replace = true,
-        extract = "```$filetype\n(.-)```"
-    },
-    Change_Code = {
-        prompt = "Regarding the following code, $input1, only ouput the result in format ```$filetype\n...\n```:\n\n```$filetype\n$text\n```",
-        replace = true,
-        extract = "```$filetype\n(.-)```"
-    }
-}
-
+M.prompts = prompts
 function select_prompt(cb)
     local promptKeys = {}
     for key, _ in pairs(M.prompts) do table.insert(promptKeys, key) end
@@ -182,9 +151,19 @@ function select_prompt(cb)
     }, function(item, idx) cb(item) end)
 end
 
-vim.api.nvim_create_user_command('Gen', function()
+vim.api.nvim_create_user_command('Gen', function(arg)
+    if arg.args ~= '' then
+        local prompt = M.prompts[arg.args]
+        if not prompt then
+            print("Invalid prompt '" .. arg.args .. "'.")
+            return
+        end
+        return M.exec(prompt)
+    end
     select_prompt(function(item) M.exec(M.prompts[item]) end)
 
 end, {range = true, nargs = '?'})
 
 return M
+
+
