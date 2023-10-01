@@ -18,38 +18,8 @@ local function trim_table(tbl)
     return tbl
 end
 
-M.exec = function(opts)
-    pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
-    curr_buffer = vim.fn.bufnr('%')
-    start_pos = vim.fn.getpos("'<")
-    end_pos = vim.fn.getpos("'>")
-    end_pos[3] = vim.fn.col("'>") -- in case of `V`, it would be maxcol instead
+local function get_window_options()
 
-    local content = table.concat(vim.api.nvim_buf_get_text(curr_buffer,
-                                                           start_pos[2] - 1,
-                                                           start_pos[3] - 1,
-                                                           end_pos[2] - 1,
-                                                           end_pos[3] - 1, {}),
-                                 '\n')
-    local text = vim.fn.shellescape(lines)
-
-    local function substitute_placeholders(input)
-        if not input then return end
-        local text = input
-        text = string.gsub(text, "%$text", content)
-        text = string.gsub(text, "%$filetype", vim.bo.filetype)
-        if string.find(text, "$input1") then
-            local input1 = vim.fn.input("input1: ")
-            text = string.gsub(text, "%$input1", input1)
-        end
-        return text
-    end
-
-    local instruction = substitute_placeholders(opts.prompt)
-    local extractor = substitute_placeholders(opts.extract)
-    local cmd = 'ollama run mistral:instruct """' .. instruction .. '"""'
-    if result_buffer then vim.cmd('bd' .. result_buffer) end
-    -- vim.cmd('vs enew')
     local width = math.floor(vim.o.columns * 0.9) -- 90% of the current editor's width
     local height = math.floor(vim.o.lines * 0.9)
     local row = math.floor((vim.o.lines - height) / 2)
@@ -69,7 +39,7 @@ M.exec = function(opts)
         new_win_row = -5 - new_win_height
     end
 
-    local win_opts = {
+    return {
         relative = 'cursor',
         width = new_win_width,
         height = new_win_height,
@@ -78,6 +48,50 @@ M.exec = function(opts)
         style = 'minimal',
         border = 'single'
     }
+end
+
+M.exec = function(opts)
+    pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
+    curr_buffer = vim.fn.bufnr('%')
+    if vim.fn.visualmode() == 'v' or vim.fn.visualmode() == 'V' then
+        start_pos = vim.fn.getpos("'<")
+        end_pos = vim.fn.getpos("'>")
+        end_pos[3] = vim.fn.col("'>") -- in case of `V`, it would be maxcol instead
+    else
+        local cursor = vim.fn.getpos('.')
+        start_pos = cursor
+        end_pos = start_pos
+    end
+
+    local content = table.concat(vim.api.nvim_buf_get_text(curr_buffer,
+                                                           start_pos[2] - 1,
+                                                           start_pos[3] - 1,
+                                                           end_pos[2] - 1,
+                                                           end_pos[3] - 1, {}),
+                                 '\n')
+    local text = vim.fn.shellescape(lines)
+
+    local function substitute_placeholders(input)
+        if not input then return end
+        local text = input
+        text = string.gsub(text, "%$text", content)
+        text = string.gsub(text, "%$filetype", vim.bo.filetype)
+        local inputs = {'input1', 'input2', 'input3', 'input4', 'input5'}
+        for _, val in ipairs(inputs) do
+            if string.find(text, "$" .. val) then
+                local answer = vim.fn.input("Prompt: ")
+                text = string.gsub(text, "%$" .. val, answer)
+            end
+        end
+        return text
+    end
+
+    local instruction = substitute_placeholders(opts.prompt)
+    local extractor = substitute_placeholders(opts.extract)
+    local cmd = 'ollama run mistral:instruct """' .. instruction .. '"""'
+    if result_buffer then vim.cmd('bd' .. result_buffer) end
+    -- vim.cmd('vs enew')
+    local win_opts = get_window_options()
     result_buffer = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_option(result_buffer, 'filetype', 'markdown')
 
@@ -118,6 +132,7 @@ M.exec = function(opts)
 end
 
 M.prompts = {
+    Generate = {prompt = "$input1", replace = true},
     Summarize = {prompt = "Summarize the following text:\n\n```\n$text\n```"},
     Ask = {prompt = "Regarding the following text, $input1:\n\n```\n$text\n```"},
     Enhance_Grammar = {
