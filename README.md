@@ -4,7 +4,7 @@ Generate text using LLMs with customizable prompts
 
 ## Requires
 
-- [Ollama](https://ollama.ai/) with model `mistral:instruct` (customizable)
+- [Ollama](https://ollama.ai/) with model [`mistral:instruct`](https://ollama.ai/library/mistral) (customizable)
 
 ## Usage
 
