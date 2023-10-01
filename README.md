@@ -62,7 +62,7 @@ Here are all [available models](https://ollama.ai/library).
 You can also change the complete command with
 
 ```lua
-require('gen').command = 'your command' -- default 'ollama run $model """$prompt"""'
+require('gen').command = 'your command' -- default 'ollama run $model \'"""$prompt"""\''
 ```
 
 You can use the placeholders `$model` and `$prompt`.
