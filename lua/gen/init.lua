@@ -84,8 +84,8 @@ M.exec = function(options)
         text = string.gsub(text, "%$text", content)
         text = string.gsub(text, "%$filetype", vim.bo.filetype)
         local inputs = {'input1', 'input2', 'input3', 'input4', 'input5'}
-        for val, _ in ipairs(inputs) do
-            if string.find(text, "$" .. val) then
+        for _, val in ipairs(inputs) do
+            if string.find(text, "%$" .. val) then
                 local answer = vim.fn.input("Prompt: ")
                 text = string.gsub(text, "%$" .. val, answer)
             end
@@ -156,7 +156,7 @@ vim.api.nvim_create_user_command('Gen', function(arg)
     if arg.args ~= '' then
         local prompt = M.prompts[arg.args]
         if not prompt then
-            print("Invalid prompt '" .. arg.args .. "'.")
+            print("Invalid prompt '" .. arg.args .. "'")
             return
         end
         return M.exec(prompt)
