@@ -60,7 +60,8 @@ M.exec = function(options)
     }, options)
     pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
     curr_buffer = vim.fn.bufnr('%')
-    if vim.fn.visualmode() == 'v' or vim.fn.visualmode() == 'V' then
+    local mode = opts.mode or vim.fn.mode()
+    if mode == 'v' or mode == 'V' then
         start_pos = vim.fn.getpos("'<")
         end_pos = vim.fn.getpos("'>")
         end_pos[3] = vim.fn.col("'>") -- in case of `V`, it would be maxcol instead
@@ -108,7 +109,6 @@ M.exec = function(options)
 
     local result_string = ''
     local lines = {}
-    print(cmd)
     local job_id = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data, _)
             result_string = result_string .. table.concat(data, '\n')
@@ -155,17 +155,26 @@ function select_prompt(cb)
 end
 
 vim.api.nvim_create_user_command('Gen', function(arg)
+    local mode
+    if arg.range == 0 then
+        mode = 'n'
+    else
+        mode = 'v'
+    end
     if arg.args ~= '' then
         local prompt = M.prompts[arg.args]
         if not prompt then
             print("Invalid prompt '" .. arg.args .. "'")
             return
         end
-        return M.exec(prompt)
+        p = vim.tbl_deep_extend('force', {mode = mode}, prompt)
+        return M.exec(p)
     end
-    select_prompt(function(item) M.exec(M.prompts[item]) end)
+    select_prompt(function(item)
+        p = vim.tbl_deep_extend('force', {mode = mode}, M.prompts[item])
+        M.exec(p)
+    end)
 
 end, {range = true, nargs = '?'})
 
 return M
-
