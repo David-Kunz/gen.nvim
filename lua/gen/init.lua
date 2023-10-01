@@ -51,7 +51,7 @@ local function get_window_options()
     }
 end
 
-M.command = 'ollama run $model """$prompt"""'
+M.command = 'ollama run $model \'"""$prompt"""\''
 
 M.exec = function(options)
     local opts = vim.tbl_deep_extend('force', {
@@ -84,13 +84,13 @@ M.exec = function(options)
         text = string.gsub(text, "%$text", content)
         text = string.gsub(text, "%$filetype", vim.bo.filetype)
         local inputs = {'input1', 'input2', 'input3', 'input4', 'input5'}
-        for _, val in ipairs(inputs) do
+        for val, _ in ipairs(inputs) do
             if string.find(text, "$" .. val) then
                 local answer = vim.fn.input("Prompt: ")
                 text = string.gsub(text, "%$" .. val, answer)
             end
         end
-        text = string.gsub(text, '%$', '\\$')
+        text = string.gsub(text, "'", "\\'")
         return text
     end
 
@@ -166,5 +166,4 @@ vim.api.nvim_create_user_command('Gen', function(arg)
 end, {range = true, nargs = '?'})
 
 return M
-
 
