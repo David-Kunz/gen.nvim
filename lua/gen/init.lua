@@ -50,7 +50,8 @@ local function get_window_options()
     }
 end
 
-M.exec = function(opts)
+M.exec = function(options)
+    local opts = vim.tbl_deep_extend('force', { model = 'mistral:instruct' }, options)
     pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
     curr_buffer = vim.fn.bufnr('%')
     if vim.fn.visualmode() == 'v' or vim.fn.visualmode() == 'V' then
@@ -88,7 +89,7 @@ M.exec = function(opts)
 
     local instruction = substitute_placeholders(opts.prompt)
     local extractor = substitute_placeholders(opts.extract)
-    local cmd = 'ollama run mistral:instruct """' .. instruction .. '"""'
+    local cmd = 'ollama run ' .. opts.model .. ' """' .. instruction .. '"""'
     if result_buffer then vim.cmd('bd' .. result_buffer) end
     -- vim.cmd('vs enew')
     local win_opts = get_window_options()
