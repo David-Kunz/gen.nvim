@@ -48,7 +48,7 @@ You can use the following properties per prompt:
    - `$text`: Visually selected text
    - `$filetype`: Filetype of the buffer (e.g. `javascript`)
    - `$input1`: Additional user input (as well as `$input2 ... $input5`)
-- `replace`: Shall the selected text be replaced?
+- `replace`: `true` if the selected text shall be replaced with the generated output
 - `extract`: Regular expression used to extract the generated result
 
 You can change the command to execute the prompt with
