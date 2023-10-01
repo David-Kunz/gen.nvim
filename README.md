@@ -51,10 +51,18 @@ You can use the following properties per prompt:
 - `replace`: `true` if the selected text shall be replaced with the generated output
 - `extract`: Regular expression used to extract the generated result
 
-You can change the command to execute the prompt with
+You can change the model with
+
+```lua
+require('gen').model = 'your_model' -- default 'mistal:instruct'
+```
+
+Here are all [available models](https://ollama.ai/library).
+
+You can also change the complete command with
 
 ```lua
 require('gen').command = 'your command' -- default 'ollama run $model """$prompt"""'
 ```
 
-You can use the placeholders `$model` (`require('gen').model`) and `$prompt`.
+You can use the placeholders and `$prompt`.
