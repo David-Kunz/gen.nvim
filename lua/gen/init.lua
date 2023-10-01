@@ -19,6 +19,7 @@ local function trim_table(tbl)
 end
 
 M.run_llm = function(opts)
+    pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
     curr_buffer = vim.fn.bufnr('%')
     start_pos = vim.fn.getpos("'<")
     end_pos = vim.fn.getpos("'>")
@@ -49,34 +50,10 @@ M.run_llm = function(opts)
         style = 'minimal',
         border = 'single'
     }
-    local buf = vim.api.nvim_create_buf(false, true)
-    local float_win = vim.api.nvim_open_win(buf, true, win_opts)
-    result_buffer = vim.fn.bufnr('%')
+    result_buffer = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_option(result_buffer, 'filetype', 'markdown')
 
-    -- local output = {}
-    -- local term_id = vim.fn.termopen(cmd .. '\n', {
-    --     -- on_stdout = function(_, data, _)
-    --     --   table.insert(output, data[1])
-    --     -- end,
-    --     on_exit = function(a,b,c)
-    --         local lines = vim.api
-    --                           .nvim_buf_get_lines(result_buffer, 0, -1, false)
-    --         lines = trim_table(lines)
-    --         vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
-    --                                   start_pos[3] - 1, end_pos[2] - 1,
-    --                                   end_pos[3] - 1, lines)
-    --         vim.cmd('bd' .. result_buffer)
-    --         result_buffer = nil
-    --     end
-    -- })
-    -- local handle = io.popen(cmd)
-    -- local result = handle:read("*a")
-    -- handle:close()
-    -- print(result)
-
-    -- vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
-    --                           start_pos[3] - 1, end_pos[2] - 1,
-    --                           end_pos[3] - 1, vim.split(result, '\n'))
+    local float_win = vim.api.nvim_open_win(result_buffer, true, win_opts)
 
     local result_string = ''
     local lines = {}
@@ -92,31 +69,50 @@ M.run_llm = function(opts)
                 vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
                                           start_pos[3] - 1, end_pos[2] - 1,
                                           end_pos[3] - 1, lines)
+                vim.cmd('bd ' .. result_buffer)
             end
-            vim.cmd('bd ' .. result_buffer)
-            result_buffer = nil
         end
     })
     vim.keymap.set('n', '<esc>', function() vim.fn.jobstop(job_id) end,
                    {buffer = result_buffer})
 
+    vim.api.nvim_buf_attach(result_buffer, false,
+                            {on_detach = function() result_buffer = nil end})
+
 end
 
 M.prompts = {
-    Summarize = {prompt = "Summarize the following text: $text", replace = true},
-    Fix_Grammar = {
-        prompt = "Fix the grammar in the following text: $text",
+    Summarize = {prompt = "Summarize the following text: $text"},
+    Fix_Text = {
+        prompt = "Fix the grammar and spelling in the following text: $text",
         replace = true
     },
-    Enhance = {prompt = "Enhance the following text: $text", replace = true},
-    Simplify = {prompt = "Simplify the following text: $text", replace = true}
+    Make_Concise = {
+        prompt = "Make the following text as simple and concise as possible: $text",
+        replace = true
+    },
+    Make_Markdown_List = {
+        prompt = "Render the following text as a markdown list: $text",
+        replace = true
+    },
+    Format_Markdown_Table = {
+        prompt = "Fix and format the following markdown table: $text",
+        replace = true
+    },
+    Review_Code = {
+        prompt = "Review the following code and make suggestions: $text"
+    }
 }
 
 vim.api.nvim_create_user_command('Gen', function()
     local promptKeys = {}
     for key, _ in pairs(M.prompts) do table.insert(promptKeys, key) end
-    vim.ui.select(promptKeys, {prompt = 'Prompt:', format_item = function(item) return table.concat(vim.split(item, '_'), ' ') end},
-                  function(item, idx) M.run_llm(M.prompts[item]) end)
+    vim.ui.select(promptKeys, {
+        prompt = 'Prompt:',
+        format_item = function(item)
+            return table.concat(vim.split(item, '_'), ' ')
+        end
+    }, function(item, idx) M.run_llm(M.prompts[item]) end)
 
 end, {range = true})
 
