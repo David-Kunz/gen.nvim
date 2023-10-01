@@ -90,6 +90,7 @@ M.exec = function(options)
                 text = string.gsub(text, "%$" .. val, answer)
             end
         end
+        text = string.gsub(text, '%$', '\\$')
         return text
     end
 
