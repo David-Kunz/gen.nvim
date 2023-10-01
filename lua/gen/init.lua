@@ -81,8 +81,6 @@ M.exec = function(options)
     local function substitute_placeholders(input)
         if not input then return end
         local text = input
-        text = string.gsub(text, "%$text", content)
-        text = string.gsub(text, "%$filetype", vim.bo.filetype)
         local inputs = {'input1', 'input2', 'input3', 'input4', 'input5'}
         for _, val in ipairs(inputs) do
             if string.find(text, "%$" .. val) then
@@ -90,6 +88,8 @@ M.exec = function(options)
                 text = string.gsub(text, "%$" .. val, answer)
             end
         end
+        text = string.gsub(text, "%$text", content)
+        text = string.gsub(text, "%$filetype", vim.bo.filetype)
         text = string.gsub(text, "'", "\\'")
         return text
     end
