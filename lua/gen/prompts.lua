@@ -2,7 +2,7 @@ return {
     Generate = {prompt = "$input1", replace = true},
     Summarize = {prompt = "Summarize the following text:\n$text"},
     Ask = {prompt = "Regarding the following text, $input1:\n$text"},
-    Enhance_Grammar = {
+    Enhance_Grammar_Spelling = {
         prompt = "Enhance the grammar and spelling in the following text:\n$text",
         replace = true
     },

@@ -51,7 +51,7 @@ local function get_window_options()
     }
 end
 
-M.command = 'ollama run $model \'"""$prompt"""\''
+M.command = 'ollama run $model \'$prompt\''
 
 M.exec = function(options)
     local opts = vim.tbl_deep_extend('force', {
@@ -108,6 +108,7 @@ M.exec = function(options)
 
     local result_string = ''
     local lines = {}
+    print(cmd)
     local job_id = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data, _)
             result_string = result_string .. table.concat(data, '\n')
