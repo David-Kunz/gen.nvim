@@ -48,3 +48,11 @@ You can use the following properties per prompt:
    - `$filetype`: Filetype of the buffer (e.g. `javascript`)
 - `replace`: Shall the selected text be replaced?
 - `extract`: Regular expression used to extract the generated result
+
+You can change the command to execute the prompt with
+
+```lua
+require('gen').command = 'your command' -- default 'ollama run $model """$prompt"""'
+```
+
+You can use the placeholders `$model` (`require('gen').model`) and `$prompt`.

@@ -51,7 +51,7 @@ local function get_window_options()
     }
 end
 
-M.command = 'ollama run $model """$instruction"""'
+M.command = 'ollama run $model """$prompt"""'
 
 M.exec = function(options)
     local opts = vim.tbl_deep_extend('force', {
@@ -93,10 +93,10 @@ M.exec = function(options)
         return text
     end
 
-    local instruction = substitute_placeholders(opts.prompt)
+    local prompt = substitute_placeholders(opts.prompt)
     local extractor = substitute_placeholders(opts.extract)
     local cmd = opts.command
-    cmd = string.gsub(cmd, "%$instruction", instruction)
+    cmd = string.gsub(cmd, "%$prompt", prompt)
     cmd = string.gsub(cmd, "%$model", opts.model)
     if result_buffer then vim.cmd('bd' .. result_buffer) end
     local win_opts = get_window_options()
