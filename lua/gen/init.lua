@@ -51,7 +51,7 @@ local function get_window_options()
     }
 end
 
-M.command = 'ollama run $model \'$prompt\''
+M.command = 'ollama run $model $prompt'
 M.model = 'mistral:instruct'
 
 M.exec = function(options)
@@ -78,7 +78,6 @@ M.exec = function(options)
                                                            end_pos[2] - 1,
                                                            end_pos[3] - 1, {}),
                                  '\n')
-    local text = vim.fn.shellescape(lines)
 
     local function substitute_placeholders(input)
         if not input then return end
@@ -89,11 +88,10 @@ M.exec = function(options)
         end
         text = string.gsub(text, "%$text", content)
         text = string.gsub(text, "%$filetype", vim.bo.filetype)
-        text = string.gsub(text, "'", "\\'")
         return text
     end
 
-    local prompt = substitute_placeholders(opts.prompt)
+    local prompt = vim.fn.shellescape(substitute_placeholders(opts.prompt))
     local extractor = substitute_placeholders(opts.extract)
     local cmd = opts.command
     cmd = string.gsub(cmd, "%$prompt", prompt)
