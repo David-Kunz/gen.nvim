@@ -56,7 +56,7 @@ M.model = 'mistral:instruct'
 
 M.exec = function(options)
     local opts = vim.tbl_deep_extend('force', {
-        model = M.model,
+        model = options.model or M.model,
         command = M.command
     }, options)
     pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
