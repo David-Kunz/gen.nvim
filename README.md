@@ -63,4 +63,4 @@ You can also change the complete command with
 require('gen').command = 'your command' -- default 'ollama run $model \'"""$prompt"""\''
 ```
 
-You can use the placeholders `$model` and `$prompt`.
+You can use the placeholders `$model` and `$prompt`. Please use single quotes around `$prompt`, as they are escaped inside.
