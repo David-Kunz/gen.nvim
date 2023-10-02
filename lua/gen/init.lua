@@ -52,10 +52,11 @@ local function get_window_options()
 end
 
 M.command = 'ollama run $model \'$prompt\''
+M.model = 'mistral:instruct'
 
 M.exec = function(options)
     local opts = vim.tbl_deep_extend('force', {
-        model = 'mistral:instruct',
+        model = M.model,
         command = M.command
     }, options)
     pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
