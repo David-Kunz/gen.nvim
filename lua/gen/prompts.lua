@@ -1,7 +1,7 @@
 return {
-    Generate = {prompt = "$input1", replace = true},
+    Generate = {prompt = "$input", replace = true},
     Summarize = {prompt = "Summarize the following text:\n$text"},
-    Ask = {prompt = "Regarding the following text, $input1:\n$text"},
+    Ask = {prompt = "Regarding the following text, $input:\n$text"},
     Enhance_Grammar_Spelling = {
         prompt = "Modify the following text to improve grammar and spelling:\n$text",
         replace = true
@@ -31,7 +31,7 @@ return {
         extract = "```$filetype\n(.-)```"
     },
     Change_Code = {
-        prompt = "Regarding the following code, $input1, only ouput the result in format ```$filetype\n...\n```:\n```$filetype\n$text\n```",
+        prompt = "Regarding the following code, $input, only ouput the result in format ```$filetype\n...\n```:\n```$filetype\n$text\n```",
         replace = true,
         extract = "```$filetype\n(.-)```"
     }

@@ -82,12 +82,9 @@ M.exec = function(options)
     local function substitute_placeholders(input)
         if not input then return end
         local text = input
-        local inputs = {'input1', 'input2', 'input3', 'input4', 'input5'}
-        for _, val in ipairs(inputs) do
-            if string.find(text, "%$" .. val) then
-                local answer = vim.fn.input("Prompt: ")
-                text = string.gsub(text, "%$" .. val, answer)
-            end
+        if string.find(text, "%$input" .. val) then
+            local answer = vim.fn.input("Prompt: ")
+            text = string.gsub(text, "%$input", answer)
         end
         text = string.gsub(text, "%$text", content)
         text = string.gsub(text, "%$filetype", vim.bo.filetype)
