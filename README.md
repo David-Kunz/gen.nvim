@@ -20,7 +20,7 @@ vim.keymap.set('n', '<leader>]', ':Gen<CR>')
 You can also directly invoke it with one of the [predefined prompts](./lua/gen/prompts.lua):
 
 ```lua
-vim.keymap.set('v', '<leader>]', ':Gen Enhance_Grammar<CR>')
+vim.keymap.set('v', '<leader>]', ':Gen Enhance_Grammar_Spelling<CR>')
 ```
 
 ## Options
