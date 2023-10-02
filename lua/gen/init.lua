@@ -82,7 +82,7 @@ M.exec = function(options)
     local function substitute_placeholders(input)
         if not input then return end
         local text = input
-        if string.find(text, "%$input" .. val) then
+        if string.find(text, "%$input") then
             local answer = vim.fn.input("Prompt: ")
             text = string.gsub(text, "%$input", answer)
         end
