@@ -88,11 +88,11 @@ M.exec = function(options)
         end
         text = string.gsub(text, "%$text", content)
         text = string.gsub(text, "%$filetype", vim.bo.filetype)
-        text = string.gsub(text, "'", "'\\''")
         return text
     end
 
-    local prompt = substitute_placeholders(opts.prompt)
+    local prompt = string.gsub(vim.fn.shellescape(substitute_placeholders(opts.prompt)), "^'(.*)'", "%1")
+
     local extractor = substitute_placeholders(opts.extract)
     local cmd = opts.command
     cmd = string.gsub(cmd, "%$prompt", prompt)
