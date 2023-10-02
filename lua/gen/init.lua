@@ -51,7 +51,7 @@ local function get_window_options()
     }
 end
 
-M.command = 'ollama run $model \'$prompt\''
+M.command = 'ollama run $model $prompt'
 M.model = 'mistral:instruct'
 
 M.exec = function(options)
@@ -91,8 +91,7 @@ M.exec = function(options)
         return text
     end
 
-    local prompt = string.gsub(vim.fn.shellescape(substitute_placeholders(opts.prompt)), "^'(.*)'", "%1")
-
+    local prompt = vim.fn.shellescape(substitute_placeholders(opts.prompt))
     local extractor = substitute_placeholders(opts.extract)
     local cmd = opts.command
     cmd = string.gsub(cmd, "%$prompt", prompt)
