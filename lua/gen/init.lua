@@ -78,7 +78,6 @@ M.exec = function(options)
                                                            end_pos[2] - 1,
                                                            end_pos[3] - 1, {}),
                                  '\n')
-    local text = vim.fn.shellescape(lines)
 
     local function substitute_placeholders(input)
         if not input then return end
@@ -89,7 +88,7 @@ M.exec = function(options)
         end
         text = string.gsub(text, "%$text", content)
         text = string.gsub(text, "%$filetype", vim.bo.filetype)
-        text = string.gsub(text, "'", "\\'")
+        text = string.gsub(text, "'", "'\\''")
         return text
     end
 
