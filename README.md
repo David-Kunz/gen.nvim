@@ -2,6 +2,8 @@
 
 Generate text using LLMs with customizable prompts
 
+[![](https://github.com/David-Kunz/gen.nvim/assets/1009936/7b5f2b40-c678-47c5-8f21-edf9516f6034)](https://youtu.be/FIZt7MinpMY?si=KChSuJJDyrcTdYiM "Local LLMs in Neovim: gen.nvim")
+
 ## Requires
 
 - [Ollama](https://ollama.ai/) with model [`mistral:instruct`](https://ollama.ai/library/mistral) (customizable)
