@@ -54,12 +54,40 @@ end
 M.command = 'ollama run $model $prompt'
 M.model = 'mistral:instruct'
 
+M.check_serve = function ()
+  local function is_serving(pname)
+    local name = vim.fn.shellescape(pname)
+    if package.config:sub(1,1) ~= '/' then
+      if not vim.fn.executable(vim.o.shell) then
+        return false
+      end
+      local handle = io.popen(vim.o.shell .. ' Get-Process -Name ' .. name .. ' 2>$null')
+      if not handle then
+        return false
+      end
+      local output = handle:read('*a')
+      handle:close()
+      return output ~= ''
+    end
+    return os.execute('pgrep -q ' .. name .. " > /dev/null 2>&1") == 0
+  end
+  if is_serving('ollama') then
+    return
+  end
+
+  local serve_job_id = vim.fn.jobstart('ollama serve')
+  vim.api.nvim_create_autocmd('VimLeave', {
+    callback = function() vim.fn.jobstop(serve_job_id) end,
+    group = vim.api.nvim_create_augroup('_gen_leave', { clear = true })
+  })
+end
+
 M.exec = function(options)
+    M.check_serve()
     local opts = vim.tbl_deep_extend('force', {
         model = M.model,
         command = M.command
     }, options)
-    pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
     curr_buffer = vim.fn.bufnr('%')
     local mode = opts.mode or vim.fn.mode()
     if mode == 'v' or mode == 'V' then
