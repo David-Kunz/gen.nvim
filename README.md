@@ -57,7 +57,7 @@ You can use the following properties per prompt:
 You can change the model with
 
 ```lua
-require('gen').model = 'your_model' -- default 'mistal:instruct'
+require('gen').model = 'your_model' -- default 'mistral:instruct'
 ```
 
 Here are all [available models](https://ollama.ai/library).
