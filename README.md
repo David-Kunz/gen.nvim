@@ -53,8 +53,9 @@ You can use the following properties per prompt:
    - `$input`: Additional user input
 - `replace`: `true` if the selected text shall be replaced with the generated output
 - `extract`: Regular expression used to extract the generated result
+- `model`: The model to use, e.g. `zephyr`, default: `mistral:instruct`
 
-You can change the model by setting `require('gen').model = 'your_model'`, e.g.
+You can change the default model by setting `require('gen').model = 'your_model'`, e.g.
 
 ```lua
 require('gen').model = 'zephyr' -- default 'mistral:instruct'
