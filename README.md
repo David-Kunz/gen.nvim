@@ -54,10 +54,10 @@ You can use the following properties per prompt:
 - `replace`: `true` if the selected text shall be replaced with the generated output
 - `extract`: Regular expression used to extract the generated result
 
-You can change the model with
+You can change the model by setting `require('gen').model = 'your_model'`, e.g.
 
 ```lua
-require('gen').model = 'your_model' -- default 'mistral:instruct'
+require('gen').model = 'zephyr' -- default 'mistral:instruct'
 ```
 
 Here are all [available models](https://ollama.ai/library).
