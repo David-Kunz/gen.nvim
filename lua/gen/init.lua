@@ -172,6 +172,19 @@ vim.api.nvim_create_user_command('Gen', function(arg)
         M.exec(p)
     end)
 
-end, {range = true, nargs = '?'})
+end, {
+  range = true,
+  nargs = '?',
+  complete = function(ArgLead, CmdLine, CursorPos)
+    local promptKeys = {}
+    for key, _ in pairs(M.prompts) do
+      if key:lower():match("^"..ArgLead:lower()) then
+        table.insert(promptKeys, key)
+      end
+    end
+    table.sort(promptKeys)
+    return promptKeys
+  end
+})
 
 return M
