@@ -51,6 +51,7 @@ You can use the following properties per prompt:
    - `$text`: Visually selected text
    - `$filetype`: Filetype of the buffer (e.g. `javascript`)
    - `$input`: Additional user input
+   - `$register`: Value of the unnamed register (yanked text)
 - `replace`: `true` if the selected text shall be replaced with the generated output
 - `extract`: Regular expression used to extract the generated result
 - `model`: The model to use, e.g. `zephyr`, default: `mistral:instruct`

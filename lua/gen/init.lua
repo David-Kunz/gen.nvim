@@ -86,6 +86,16 @@ M.exec = function(options)
             local answer = vim.fn.input("Prompt: ")
             text = string.gsub(text, "%$input", answer)
         end
+
+        if string.find(text, "%$register") then
+          local register = vim.fn.getreg('"')
+          if not register or register:match("^%s*$") then
+            error("Prompt uses $register but yank register is empty")
+          end
+
+          text = string.gsub(text, "%$register", register)
+        end
+
         text = string.gsub(text, "%$text", content)
         text = string.gsub(text, "%$filetype", vim.bo.filetype)
         return text
