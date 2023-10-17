@@ -86,6 +86,16 @@ M.exec = function(options)
             local answer = vim.fn.input("Prompt: ")
             text = string.gsub(text, "%$input", answer)
         end
+
+        if string.find(text, "%$register") then
+          local register = vim.fn.getreg('"')
+          if not register or register:match("^%s*$") then
+            error("Prompt uses $register but yank register is empty")
+          end
+
+          text = string.gsub(text, "%$register", register)
+        end
+
         text = string.gsub(text, "%$text", content)
         text = string.gsub(text, "%$filetype", vim.bo.filetype)
         return text
@@ -172,6 +182,19 @@ vim.api.nvim_create_user_command('Gen', function(arg)
         M.exec(p)
     end)
 
-end, {range = true, nargs = '?'})
+end, {
+  range = true,
+  nargs = '?',
+  complete = function(ArgLead, CmdLine, CursorPos)
+    local promptKeys = {}
+    for key, _ in pairs(M.prompts) do
+      if key:lower():match("^"..ArgLead:lower()) then
+        table.insert(promptKeys, key)
+      end
+    end
+    table.sort(promptKeys)
+    return promptKeys
+  end
+})
 
 return M
