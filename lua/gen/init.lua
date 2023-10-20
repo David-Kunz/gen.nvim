@@ -129,7 +129,9 @@ M.exec = function(options)
             result_string = result_string .. table.concat(data, '\n')
             lines = vim.split(result_string, '\n', true)
             vim.api.nvim_buf_set_lines(result_buffer, 0, -1, false, lines)
-            vim.fn.feedkeys('$')
+            vim.api.nvim_win_call(float_win, function()
+              vim.fn.feedkeys('$')
+            end)
         end,
         on_exit = function(a, b)
             if b == 0 and opts.replace then
