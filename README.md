@@ -47,7 +47,7 @@ require('gen').prompts['Fix_Code'] = {
 
 You can use the following properties per prompt:
 
-- `prompt`: Prompt which can use the following placeholders:
+- `prompt`: (string | function) Prompt either as a string or a function which should return a string. The result can use the following placeholders:
    - `$text`: Visually selected text
    - `$filetype`: Filetype of the buffer (e.g. `javascript`)
    - `$input`: Additional user input
