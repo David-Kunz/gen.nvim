@@ -124,8 +124,14 @@ M.exec = function(options)
 
     local result_string = ''
     local lines = {}
-    local job_id = vim.fn.jobstart(cmd, {
+    local job_id
+    job_id = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data, _)
+            -- window was closed, so cancel the job
+            if not vim.api.nvim_win_is_valid(float_win) then
+              vim.fn.jobstop(job_id)
+              return
+            end
             result_string = result_string .. table.concat(data, '\n')
             lines = vim.split(result_string, '\n', true)
             vim.api.nvim_buf_set_lines(result_buffer, 0, -1, false, lines)
