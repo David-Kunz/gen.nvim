@@ -189,6 +189,7 @@ vim.api.nvim_create_user_command('Gen', function(arg)
         return M.exec(p)
     end
     select_prompt(function(item)
+        if not item then return end
         p = vim.tbl_deep_extend('force', {mode = mode}, M.prompts[item])
         M.exec(p)
     end)
