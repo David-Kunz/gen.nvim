@@ -10,6 +10,7 @@ Generate text using LLMs with customizable prompts
 ## Requires
 
 - [Ollama](https://ollama.ai/) with an appropriate model, e.g. [`mistral:instruct`](https://ollama.ai/library/mistral) or [`zephyr`](https://ollama.ai/library/zephyr) (customizable)
+- [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
 
 ## Usage
 
@@ -26,6 +27,12 @@ You can also directly invoke it with one of the [predefined prompts](./lua/gen/p
 
 ```lua
 vim.keymap.set('v', '<leader>]', ':Gen Enhance_Grammar_Spelling<CR>')
+```
+
+Use command `GenSelectModel` to get the list of all available models.
+
+```lua
+vim.keymap.set('n', '<leader>]', ':GenSelectModel<CR>')
 ```
 
 ## Options

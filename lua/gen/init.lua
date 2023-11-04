@@ -1,4 +1,5 @@
 local prompts = require('gen.prompts')
+local curl = require("plenary.curl")
 local M = {}
 
 local curr_buffer = nil
@@ -54,12 +55,16 @@ end
 M.command = 'ollama run $model $prompt'
 M.model = 'mistral:instruct'
 
+function M.serve()
+    pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
+end
+
 M.exec = function(options)
     local opts = vim.tbl_deep_extend('force', {
         model = M.model,
         command = M.command
     }, options)
-    pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
+    M.serve()
     curr_buffer = vim.fn.bufnr('%')
     local mode = opts.mode or vim.fn.mode()
     if mode == 'v' or mode == 'V' then
@@ -178,6 +183,26 @@ function select_prompt(cb)
     }, function(item, idx) cb(item) end)
 end
 
+function select_model(cb)
+    M.serve()       -- should not start another server if one is already running
+    vim.wait(200)   -- make sure to have ollama server up and running
+
+    local url = "localhost:11434/api/tags"
+    local response = curl.get(url, {
+        accept = "application/json",
+    })
+    if response.status == 200 then
+        local data = vim.fn.json_decode(response.body)
+        local models = {}
+        for _, item in ipairs(data.models) do
+            table.insert(models, item.name)
+        end
+        vim.ui.select(models, {
+            prompt = 'List of available models:',
+        }, function(item, idx) cb(item) end)
+    end
+end
+
 vim.api.nvim_create_user_command('Gen', function(arg)
     local mode
     if arg.range == 0 then
@@ -214,5 +239,11 @@ end, {
     return promptKeys
   end
 })
+
+vim.api.nvim_create_user_command('GenSelectModel', function()
+    select_model(function(model)
+        if model then M.model = model end
+    end)
+end, {})
 
 return M
