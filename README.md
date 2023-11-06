@@ -55,6 +55,8 @@ You can use the following properties per prompt:
 - `replace`: `true` if the selected text shall be replaced with the generated output
 - `extract`: Regular expression used to extract the generated result
 - `model`: The model to use, e.g. `zephyr`, default: `mistral:instruct`
+- `container`: Specify name of ollama container if you are using Docker to host ollama service
+- `debugCommand`: Set to true redirects stderr of command execution to output window
 
 You can change the default model by setting `require('gen').model = 'your_model'`, e.g.
 
@@ -70,4 +72,12 @@ You can also change the complete command with
 require('gen').command = 'your command' -- default 'ollama run $model $prompt'
 ```
 
-You can use the placeholders `$model` and `$prompt`.
+You can use the placeholders `$model`, `$prompt` and `$container`.
+
+You can specify Docker container that hosts ollama
+
+```lua
+require('gen').container = 'container name' -- default nil
+```
+Default command will then change to
+`'docker exec $container ollama run $model $prompt'`
