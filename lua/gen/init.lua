@@ -57,7 +57,8 @@ M.model = 'mistral:instruct'
 M.exec = function(options)
     local opts = vim.tbl_deep_extend('force', {
         model = M.model,
-        command = M.command
+        command = M.command,
+        win_config = M.win_config
     }, options)
     pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
     curr_buffer = vim.fn.bufnr('%')
@@ -88,12 +89,12 @@ M.exec = function(options)
         end
 
         if string.find(text, "%$register") then
-          local register = vim.fn.getreg('"')
-          if not register or register:match("^%s*$") then
-            error("Prompt uses $register but yank register is empty")
-          end
+            local register = vim.fn.getreg('"')
+            if not register or register:match("^%s*$") then
+                error("Prompt uses $register but yank register is empty")
+            end
 
-          text = string.gsub(text, "%$register", register)
+            text = string.gsub(text, "%$register", register)
         end
 
         text = string.gsub(text, "%$text", content)
@@ -104,10 +105,7 @@ M.exec = function(options)
     local prompt = opts.prompt
 
     if type(prompt) == "function" then
-      prompt = prompt({
-        content = content,
-        filetype = vim.bo.filetype,
-      })
+        prompt = prompt({content = content, filetype = vim.bo.filetype})
     end
 
     prompt = vim.fn.shellescape(substitute_placeholders(prompt))
@@ -116,7 +114,8 @@ M.exec = function(options)
     cmd = string.gsub(cmd, "%$prompt", prompt)
     cmd = string.gsub(cmd, "%$model", opts.model)
     if result_buffer then vim.cmd('bd' .. result_buffer) end
-    local win_opts = get_window_options()
+    local win_opts = vim.tbl_deep_extend('force', get_window_options(),
+                                         opts.win_config)
     result_buffer = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_option(result_buffer, 'filetype', 'markdown')
 
@@ -129,14 +128,14 @@ M.exec = function(options)
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
             if not vim.api.nvim_win_is_valid(float_win) then
-              vim.fn.jobstop(job_id)
-              return
+                vim.fn.jobstop(job_id)
+                return
             end
             result_string = result_string .. table.concat(data, '\n')
             lines = vim.split(result_string, '\n', true)
             vim.api.nvim_buf_set_lines(result_buffer, 0, -1, false, lines)
             vim.api.nvim_win_call(float_win, function()
-              vim.fn.feedkeys('$')
+                vim.fn.feedkeys('$')
             end)
         end,
         on_exit = function(a, b)
@@ -164,6 +163,8 @@ M.exec = function(options)
                             {on_detach = function() result_buffer = nil end})
 
 end
+
+M.win_config = {}
 
 M.prompts = prompts
 function select_prompt(cb)
@@ -201,18 +202,18 @@ vim.api.nvim_create_user_command('Gen', function(arg)
     end)
 
 end, {
-  range = true,
-  nargs = '?',
-  complete = function(ArgLead, CmdLine, CursorPos)
-    local promptKeys = {}
-    for key, _ in pairs(M.prompts) do
-      if key:lower():match("^"..ArgLead:lower()) then
-        table.insert(promptKeys, key)
-      end
+    range = true,
+    nargs = '?',
+    complete = function(ArgLead, CmdLine, CursorPos)
+        local promptKeys = {}
+        for key, _ in pairs(M.prompts) do
+            if key:lower():match("^" .. ArgLead:lower()) then
+                table.insert(promptKeys, key)
+            end
+        end
+        table.sort(promptKeys)
+        return promptKeys
     end
-    table.sort(promptKeys)
-    return promptKeys
-  end
 })
 
 return M
