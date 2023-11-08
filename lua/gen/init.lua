@@ -110,7 +110,8 @@ M.exec = function(options)
             text = string.gsub(text, "%$register", register)
         end
 
-        text = string.gsub(text, "%$text", string.gsub(content, "%%", "%%%%"))
+        content = string.gsub(content, "%%", "%%%%")
+        text = string.gsub(text, "%$text", content)
         text = string.gsub(text, "%$filetype", vim.bo.filetype)
         return text
     end
@@ -124,7 +125,8 @@ M.exec = function(options)
     prompt = vim.fn.shellescape(substitute_placeholders(prompt))
     local extractor = substitute_placeholders(opts.extract)
     local cmd = opts.command
-    cmd = string.gsub(cmd, "%$prompt", string.gsub(prompt, "%%", "%%%%"))
+    prompt = string.gsub(prompt, "%%", "%%%%")
+    cmd = string.gsub(cmd, "%$prompt", prompt)
     cmd = string.gsub(cmd, "%$model", opts.model)
     if opts.container ~= nil then
         cmd = string.gsub(cmd, "%$container", opts.container)
@@ -140,6 +142,7 @@ M.exec = function(options)
     local result_string = ''
     local lines = {}
     local job_id
+    print(cmd)
     job_id = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
