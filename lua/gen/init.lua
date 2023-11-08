@@ -97,7 +97,7 @@ M.exec = function(options)
             text = string.gsub(text, "%$register", register)
         end
 
-        text = string.gsub(text, "%$text", content)
+        text = string.gsub(text, "%$text", string.gsub(content, "%%", "%%%%"))
         text = string.gsub(text, "%$filetype", vim.bo.filetype)
         return text
     end
@@ -111,7 +111,7 @@ M.exec = function(options)
     prompt = vim.fn.shellescape(substitute_placeholders(prompt))
     local extractor = substitute_placeholders(opts.extract)
     local cmd = opts.command
-    cmd = string.gsub(cmd, "%$prompt", prompt)
+    cmd = string.gsub(cmd, "%$prompt", string.gsub(prompt, "%%", "%%%%"))
     cmd = string.gsub(cmd, "%$model", opts.model)
     if result_buffer then vim.cmd('bd' .. result_buffer) end
     local win_opts = vim.tbl_deep_extend('force', get_window_options(),
