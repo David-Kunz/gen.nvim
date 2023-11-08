@@ -70,9 +70,9 @@ M.exec = function(options)
         win_config = M.win_config
     }, options)
     if opts.container ~= nil then
-        pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
-    else
         pcall(io.popen, 'docker start ' .. opts.container)
+    else
+        pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
     end
     curr_buffer = vim.fn.bufnr('%')
     local mode = opts.mode or vim.fn.mode()
