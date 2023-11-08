@@ -66,7 +66,7 @@ M.exec = function(options)
         model = M.model,
         command = M.command,
         container = M.container,
-        debugCommand = M.debugCommand
+        debugCommand = M.debugCommand,
         win_config = M.win_config
     }, options)
     if opts.container ~= nil then
