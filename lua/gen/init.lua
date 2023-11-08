@@ -53,14 +53,27 @@ end
 
 M.command = 'ollama run $model $prompt'
 M.model = 'mistral:instruct'
+M.container = nil
+M.debugCommand = false
+
+local commandContainer = 'docker exec $container ollama run $model $prompt'
 
 M.exec = function(options)
+    if M.container ~= nil and M.command == 'ollama run $model $prompt' then
+        M.command = commandContainer
+    end
     local opts = vim.tbl_deep_extend('force', {
         model = M.model,
         command = M.command,
+        container = M.container,
+        debugCommand = M.debugCommand
         win_config = M.win_config
     }, options)
-    pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
+    if opts.container ~= nil then
+        pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
+    else
+        pcall(io.popen, 'docker start ' .. opts.container)
+    end
     curr_buffer = vim.fn.bufnr('%')
     local mode = opts.mode or vim.fn.mode()
     if mode == 'v' or mode == 'V' then
@@ -113,6 +126,9 @@ M.exec = function(options)
     local cmd = opts.command
     cmd = string.gsub(cmd, "%$prompt", string.gsub(prompt, "%%", "%%%%"))
     cmd = string.gsub(cmd, "%$model", opts.model)
+    if opts.container ~= nil then
+        cmd = string.gsub(cmd, "%$container", opts.container)
+    end
     if result_buffer then vim.cmd('bd' .. result_buffer) end
     local win_opts = vim.tbl_deep_extend('force', get_window_options(),
                                          opts.win_config)
@@ -138,6 +154,22 @@ M.exec = function(options)
                 vim.fn.feedkeys('$')
             end)
         end,
+        on_stderr = function(_, data, _)
+            if opts.debugCommand then
+                -- window was closed, so cancel the job
+                if not vim.api.nvim_win_is_valid(float_win) then
+                    vim.fn.jobstop(job_id)
+                    return
+                end
+                result_string = result_string .. table.concat(data, '\n')
+                lines = vim.split(result_string, '\n', true)
+                vim.api.nvim_buf_set_lines(result_buffer, 0, -1, false, lines)
+                vim.api.nvim_win_call(float_win, function()
+                    vim.fn.feedkeys('$')
+                end)
+            end
+        end,
+        stderr_buffered = opts.debugCommand,
         on_exit = function(a, b)
             if b == 0 and opts.replace then
                 if extractor then
