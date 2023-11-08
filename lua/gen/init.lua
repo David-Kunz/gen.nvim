@@ -142,7 +142,6 @@ M.exec = function(options)
     local result_string = ''
     local lines = {}
     local job_id
-    print(cmd)
     job_id = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
