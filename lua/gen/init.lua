@@ -28,7 +28,20 @@ M.debugCommand = false
 
 local commandContainer = "docker exec $container ollama run $model $prompt"
 
+function write_to_buffer(lines)
+    vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", true)
+    vim.api.nvim_buf_set_lines(M.result_buffer, -1, -1, false, lines)
+    vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
+end
+
 M.exec = function(options)
+    if M.result_buffer == nil then
+        vim.cmd("vnew")
+        M.result_buffer = vim.fn.bufnr("%")
+        M.float_win = vim.fn.win_getid()
+        vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
+        vim.api.nvim_win_set_option(M.float_win, "wrap", true)
+    end
     if M.container ~= nil and M.command == "ollama run $model $prompt" then
         M.command = commandContainer
     end
@@ -44,6 +57,7 @@ M.exec = function(options)
     else
         pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
     end
+
     curr_buffer = vim.fn.bufnr("%")
     local mode = opts.mode or vim.fn.mode()
     if mode == "v" or mode == "V" then
@@ -101,59 +115,67 @@ M.exec = function(options)
     if opts.container ~= nil then
         cmd = string.gsub(cmd, "%$container", opts.container)
     end
-    if M.result_buffer == nil then
-        vim.cmd("vnew")
-        M.result_buffer = vim.fn.bufnr("%")
-        M.float_win = vim.fn.win_getid()
-        vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
-        vim.api.nvim_win_set_option(M.float_win, "wrap", true)
-    end
 
     local result_string = ""
     local lines = {}
     local job_id
-    local data = {
+    local bodyData = {
         model = opts.model,
         prompt = prompt,
         stream = false,
     }
 
     if M.context then
-        data.context = M.context
+        bodyData.context = M.context
     end
 
-    local json = vim.fn.json_encode(data)
-    cmd = "curl -X POST http://localhost:11434/api/generate -d '" .. json .. "'"
+    local json = vim.fn.json_encode(bodyData)
+    cmd = "curl --silent -X POST http://localhost:11434/api/generate -d " .. vim.fn.shellescape(json)
 
-    vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", true)
-    vim.api.nvim_buf_set_lines(
-        M.result_buffer,
-        -1,
-        -1,
-        false,
-        vim.split("```text\n================\n" .. prompt .. "\n================\n```\n", "\n")
-    )
-    vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
+    write_to_buffer(vim.split("```text\n================\n" .. prompt .. "\n================\n```\n", "\n"))
     vim.fn.feedkeys("G")
+
     job_id = vim.fn.jobstart(cmd, {
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
             if not vim.api.nvim_win_is_valid(M.float_win) then
                 vim.fn.jobstop(job_id)
-                vim.cmd("bd " .. M.result_buffer)
+                vim.cmd("bd! " .. M.result_buffer)
                 M.result_buffer = nil
                 M.float_win = nil
                 return
             end
 
-            local body = vim.fn.json_decode(table.concat(data, "\n"))
+            local str = ""
+            if type(data) == "table" then
+                str = data[1]
+            else
+                str = data
+            end
 
-            result_string = result_string .. table.concat(data, "\n")
-            lines = vim.split(result_string, "\n", true)
+            if string.len(str) == 0 then
+                return
+            end
+
+            local success, result = pcall(function()
+                return vim.fn.json_decode(str)
+            end)
+
+            local body = {}
+            if success then
+                body = result
+            else
+                write_to_buffer({ "Error: " .. result })
+            end
+
+            if body == nil or body.response == nil then
+                write_to_buffer({ "no response" })
+                return
+            end
+
+            result_string = result_string .. body.response .. "\n"
             lines = vim.split(body.response .. "\n", "\n")
-            vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", true)
-            vim.api.nvim_buf_set_lines(M.result_buffer, -1, -1, false, lines)
-            vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
+            write_to_buffer(lines)
             vim.fn.feedkeys("G")
             M.context = body.context
         end,
@@ -164,9 +186,14 @@ M.exec = function(options)
                     vim.fn.jobstop(job_id)
                     return
                 end
+
+                if data == nil or string.len(data) == 0 then
+                    return
+                end
+
                 result_string = result_string .. table.concat(data, "\n")
-                lines = vim.split(result_string, "\n", true)
-                vim.api.nvim_buf_set_lines(M.result_buffer, -1, -1, false, lines)
+                lines = vim.split(result_string, "\n")
+                write_to_buffer(lines)
             end
         end,
         on_exit = function(a, b)
@@ -174,7 +201,7 @@ M.exec = function(options)
                 if extractor then
                     local extracted = result_string:match(extractor)
                     if not extracted then
-                        vim.cmd("bd " .. M.result_buffer)
+                        vim.cmd("bd! " .. M.result_buffer)
                         M.result_buffer = nil
                         M.float_win = nil
                         return
