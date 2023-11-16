@@ -29,8 +29,14 @@ M.debugCommand = false
 local commandContainer = "docker exec $container ollama run $model $prompt"
 
 function write_to_buffer(lines)
+    local all_lines = vim.api.nvim_buf_get_lines(M.result_buffer, 0, -1, false)
+
+    local last_row = #all_lines
+    local last_row_content = all_lines[last_row]
+    local last_col = string.len(last_row_content)
+
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", true)
-    vim.api.nvim_buf_set_lines(M.result_buffer, -1, -1, false, lines)
+    vim.api.nvim_buf_set_text(M.result_buffer, last_row - 1, last_col, last_row - 1, last_col, lines)
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
 end
 
@@ -116,13 +122,13 @@ M.exec = function(options)
         cmd = string.gsub(cmd, "%$container", opts.container)
     end
 
-    local result_string = ""
+    M.result_string = ""
     local lines = {}
     local job_id
     local bodyData = {
         model = opts.model,
         prompt = prompt,
-        stream = false,
+        stream = true,
     }
 
     if M.context then
@@ -136,6 +142,8 @@ M.exec = function(options)
     vim.fn.feedkeys("G")
 
     job_id = vim.fn.jobstart(cmd, {
+        stdout_buffered = true,
+        stderr_buffered = true,
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
             if not vim.api.nvim_win_is_valid(M.float_win) then
@@ -146,38 +154,15 @@ M.exec = function(options)
                 return
             end
 
-            local str = ""
             if type(data) == "table" then
-                str = data[1]
+                for _, v in ipairs(data) do
+                    process_response(v)
+                end
             else
-                str = data
+                process_response(data)
             end
 
-            if string.len(str) == 0 then
-                return
-            end
-
-            local success, result = pcall(function()
-                return vim.fn.json_decode(str)
-            end)
-
-            local body = {}
-            if success then
-                body = result
-            else
-                write_to_buffer({ "Error: " .. result })
-            end
-
-            if body == nil or body.response == nil then
-                write_to_buffer({ "no response" })
-                return
-            end
-
-            result_string = result_string .. body.response .. "\n"
-            lines = vim.split(body.response .. "\n", "\n")
-            write_to_buffer(lines)
             vim.fn.feedkeys("G")
-            M.context = body.context
         end,
         on_stderr = function(_, data, _)
             if opts.debugCommand then
@@ -191,15 +176,17 @@ M.exec = function(options)
                     return
                 end
 
-                result_string = result_string .. table.concat(data, "\n")
-                lines = vim.split(result_string, "\n")
+                M.result_string = M.result_string .. table.concat(data, "\n")
+                lines = vim.split(M.result_string, "\n")
                 write_to_buffer(lines)
             end
         end,
         on_exit = function(a, b)
+            write_to_buffer({ "", "" })
+
             if b == 0 and opts.replace then
                 if extractor then
-                    local extracted = result_string:match(extractor)
+                    local extracted = M.result_string:match(extractor)
                     if not extracted then
                         vim.cmd("bd! " .. M.result_buffer)
                         M.result_buffer = nil
@@ -290,5 +277,36 @@ end, {
         return promptKeys
     end,
 })
+
+function process_response(str)
+    if string.len(str) == 0 then
+        return
+    end
+
+    local success, result = pcall(function()
+        return vim.fn.json_decode(str)
+    end)
+
+    local body = {}
+    if success then
+        body = result
+    else
+        write_to_buffer(vim.split(str, "\n"))
+        write_to_buffer({ "Error: " .. result })
+    end
+
+    if body == nil or body.response == nil then
+        write_to_buffer({ "no response" })
+        return
+    end
+
+    M.result_string = M.result_string .. body.response .. "\n"
+    local lines = vim.split(body.response, "\n")
+    write_to_buffer(lines)
+
+    if body.context ~= nil then
+        M.context = body.context
+    end
+end
 
 return M
