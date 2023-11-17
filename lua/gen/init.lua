@@ -35,19 +35,14 @@ function write_to_buffer(lines)
     local last_row_content = all_lines[last_row]
     local last_col = string.len(last_row_content)
 
+    local text = table.concat(lines or {}, "\n")
+
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", true)
-    vim.api.nvim_buf_set_text(M.result_buffer, last_row - 1, last_col, last_row - 1, last_col, lines)
+    vim.api.nvim_buf_set_text(M.result_buffer, last_row - 1, last_col, last_row - 1, last_col, vim.split(text, "\n"))
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
 end
 
 M.exec = function(options)
-    if M.result_buffer == nil then
-        vim.cmd("vnew")
-        M.result_buffer = vim.fn.bufnr("%")
-        M.float_win = vim.fn.win_getid()
-        vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
-        vim.api.nvim_win_set_option(M.float_win, "wrap", true)
-    end
     if M.container ~= nil and M.command == "ollama run $model $prompt" then
         M.command = commandContainer
     end
@@ -80,6 +75,14 @@ M.exec = function(options)
         vim.api.nvim_buf_get_text(curr_buffer, start_pos[2] - 1, start_pos[3] - 1, end_pos[2] - 1, end_pos[3] - 1, {}),
         "\n"
     )
+
+    if M.result_buffer == nil then
+        vim.cmd("vnew")
+        M.result_buffer = vim.fn.bufnr("%")
+        M.float_win = vim.fn.win_getid()
+        vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
+        vim.api.nvim_win_set_option(M.float_win, "wrap", true)
+    end
 
     local function substitute_placeholders(input)
         if not input then
@@ -123,7 +126,6 @@ M.exec = function(options)
     end
 
     M.result_string = ""
-    local lines = {}
     local job_id
     local bodyData = {
         model = opts.model,
@@ -138,12 +140,12 @@ M.exec = function(options)
     local json = vim.fn.json_encode(bodyData)
     cmd = "curl --silent -X POST http://localhost:11434/api/generate -d " .. vim.fn.shellescape(json)
 
-    write_to_buffer(vim.split("```text\n================\n" .. prompt .. "\n================\n```\n", "\n"))
-    vim.fn.feedkeys("G")
+    write_to_buffer({ "Prompt:", "```text", prompt, "```", "" })
 
+    local partial_data = ""
     job_id = vim.fn.jobstart(cmd, {
-        stdout_buffered = true,
-        stderr_buffered = true,
+        -- stdout_buffered = true,
+        stderr_buffered = opts.debugCommand,
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
             if not vim.api.nvim_win_is_valid(M.float_win) then
@@ -154,15 +156,25 @@ M.exec = function(options)
                 return
             end
 
-            if type(data) == "table" then
-                for _, v in ipairs(data) do
-                    process_response(v)
+            for _, line in ipairs(data) do
+                partial_data = partial_data .. line
+                if line:sub(-1) == "}" then
+                    partial_data = partial_data .. "\n"
                 end
-            else
-                process_response(data)
             end
 
-            vim.fn.feedkeys("G")
+            local lines = vim.split(partial_data, "\n", { trimempty = true })
+
+            partial_data = table.remove(lines) or ""
+
+            for _, line in ipairs(lines) do
+                process_response(line)
+            end
+
+            if partial_data:sub(-1) == "}" then
+                process_response(partial_data)
+                partial_data = ""
+            end
         end,
         on_stderr = function(_, data, _)
             if opts.debugCommand then
@@ -177,14 +189,15 @@ M.exec = function(options)
                 end
 
                 M.result_string = M.result_string .. table.concat(data, "\n")
-                lines = vim.split(M.result_string, "\n")
+                local lines = vim.split(M.result_string, "\n")
                 write_to_buffer(lines)
             end
         end,
         on_exit = function(a, b)
-            write_to_buffer({ "", "" })
+            write_to_buffer({ "", "", "DONE", "--------------", "" })
 
             if b == 0 and opts.replace then
+                local lines = {}
                 if extractor then
                     local extracted = M.result_string:match(extractor)
                     if not extracted then
@@ -291,12 +304,10 @@ function process_response(str)
     if success then
         body = result
     else
-        write_to_buffer(vim.split(str, "\n"))
-        write_to_buffer({ "Error: " .. result })
+        write_to_buffer({ "", "====== ERROR ====", str, "-------------", "" })
     end
 
-    if body == nil or body.response == nil then
-        write_to_buffer({ "no response" })
+    if body == nil then
         return
     end
 
