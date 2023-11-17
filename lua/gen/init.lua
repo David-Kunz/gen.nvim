@@ -82,6 +82,7 @@ M.exec = function(options)
         M.float_win = vim.fn.win_getid()
         vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
         vim.api.nvim_win_set_option(M.float_win, "wrap", true)
+        write_to_buffer({ "# Chat with " .. opts.model, "" })
     end
 
     local function substitute_placeholders(input)
@@ -117,6 +118,7 @@ M.exec = function(options)
 
     prompt = substitute_placeholders(prompt)
     local extractor = substitute_placeholders(opts.extract)
+
     local cmd = opts.command
     prompt = string.gsub(prompt, "%%", "%%%%")
     cmd = string.gsub(cmd, "%$prompt", prompt)
@@ -140,7 +142,7 @@ M.exec = function(options)
     local json = vim.fn.json_encode(bodyData)
     cmd = "curl --silent -X POST http://localhost:11434/api/generate -d " .. vim.fn.shellescape(json)
 
-    write_to_buffer({ "Prompt:", "```text", prompt, "```", "" })
+    write_to_buffer({ "## Prompt:", "", prompt, "", "---", "" })
 
     local partial_data = ""
     job_id = vim.fn.jobstart(cmd, {
@@ -194,8 +196,6 @@ M.exec = function(options)
             end
         end,
         on_exit = function(a, b)
-            write_to_buffer({ "", "", "DONE", "--------------", "" })
-
             if b == 0 and opts.replace then
                 local lines = {}
                 if extractor then
@@ -207,6 +207,8 @@ M.exec = function(options)
                         return
                     end
                     lines = vim.split(extracted, "\n", true)
+                else
+                    lines = vim.split(M.result_string, "\n", true)
                 end
                 lines = trim_table(lines)
                 vim.api.nvim_buf_set_text(
@@ -217,10 +219,14 @@ M.exec = function(options)
                     end_pos[3] - 1,
                     lines
                 )
-                vim.cmd("bd " .. M.result_buffer)
+                vim.api.nvim_win_hide(M.float_win)
+                vim.api.nvim_buf_delete(M.result_buffer, { force = true })
                 M.result_buffer = nil
                 M.float_win = nil
+            else
+                write_to_buffer({ "", "", "---", "" })
             end
+            M.result_string = ""
         end,
     })
     vim.keymap.set("n", "<esc>", function()
@@ -311,7 +317,7 @@ function process_response(str)
         return
     end
 
-    M.result_string = M.result_string .. body.response .. "\n"
+    M.result_string = M.result_string .. body.response
     local lines = vim.split(body.response, "\n")
     write_to_buffer(lines)
 
