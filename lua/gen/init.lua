@@ -55,6 +55,7 @@ M.command = 'ollama run $model $prompt'
 M.model = 'mistral:instruct'
 M.container = nil
 M.debugCommand = false
+M.pty = false
 
 local commandContainer = 'docker exec $container ollama run $model $prompt'
 
@@ -67,7 +68,8 @@ M.exec = function(options)
         command = M.command,
         container = M.container,
         debugCommand = M.debugCommand,
-        win_config = M.win_config
+        win_config = M.win_config,
+        pty = M.pty
     }, options)
     if opts.container ~= nil then
         pcall(io.popen, 'docker start ' .. opts.container)
@@ -149,6 +151,12 @@ M.exec = function(options)
                 vim.fn.jobstop(job_id)
                 return
             end
+            if opts.pty then
+                -- Remove carriage returns from each line
+                for i, line in ipairs(data) do
+                    data[i] = line:gsub('\r', '')
+                end
+            end
             result_string = result_string .. table.concat(data, '\n')
             lines = vim.split(result_string, '\n', true)
             vim.api.nvim_buf_set_lines(result_buffer, 0, -1, false, lines)
@@ -188,7 +196,8 @@ M.exec = function(options)
                                           end_pos[3] - 1, lines)
                 vim.cmd('bd ' .. result_buffer)
             end
-        end
+        end,
+        pty = opts.pty
     })
     vim.keymap.set('n', '<esc>', function() vim.fn.jobstop(job_id) end,
                    {buffer = result_buffer})
