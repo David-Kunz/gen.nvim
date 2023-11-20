@@ -2,7 +2,7 @@
 
 Generate text using LLMs with customizable prompts
 
-# Major issue with ollama 0.1.10
+# Important: Issue with ollama 0.1.10
 
 Currently, there are issues with Ollama 0.1.10, please use a previous version instead.
 See https://github.com/David-Kunz/gen.nvim/issues/32 for more information.
