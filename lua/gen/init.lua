@@ -57,9 +57,6 @@ M.command_container = 'docker exec $container ollama run $model $prompt'
 M.container = nil
 
 M.exec = function(options)
-    if M.container ~= nil and M.command == 'ollama run $model $prompt' then
-        M.command = commandContainer
-    end
     local opts = vim.tbl_deep_extend('force', {
         model = M.model,
         command = M.container ~= nil and M.command_container or M.command,
