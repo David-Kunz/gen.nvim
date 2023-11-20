@@ -56,7 +56,6 @@ You can use the following properties per prompt:
 - `extract`: Regular expression used to extract the generated result
 - `model`: The model to use, e.g. `zephyr`, default: `mistral:instruct`
 - `container`: Specify name of ollama container if you are using Docker to host ollama service
-- `debugCommand`: Set to true redirects stderr of command execution to output window
 
 You can change the default model by setting `require('gen').model = 'your_model'`, e.g.
 

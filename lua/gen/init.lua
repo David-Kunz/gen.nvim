@@ -51,12 +51,10 @@ local function get_window_options()
     }
 end
 
-M.command = 'ollama run $model $prompt'
 M.model = 'mistral:instruct'
+M.command = 'ollama run $model $prompt'
+M.command_container = 'docker exec $container ollama run $model $prompt'
 M.container = nil
-M.debugCommand = false
-
-local commandContainer = 'docker exec $container ollama run $model $prompt'
 
 M.exec = function(options)
     if M.container ~= nil and M.command == 'ollama run $model $prompt' then
@@ -64,9 +62,8 @@ M.exec = function(options)
     end
     local opts = vim.tbl_deep_extend('force', {
         model = M.model,
-        command = M.command,
+        command = M.container ~= nil and M.command_container or M.command,
         container = M.container,
-        debugCommand = M.debugCommand,
         win_config = M.win_config
     }, options)
     if opts.container ~= nil then
@@ -142,27 +139,29 @@ M.exec = function(options)
     local result_string = ''
     local job_id
     vim.api.nvim_buf_call(result_buffer, function()
-      vim.cmd('set syntax=on')
-      vim.fn.termopen(cmd, {
-        on_exit = function(a, b)
-          if b == 0 and opts.replace then
-              local lines = trim_table(vim.api.nvim_buf_get_lines(result_buffer, 0, -1, false))
-              local text = table.concat(lines, '\n')
-              if extractor then
-                  local extracted = text:match(extractor)
-                  if not extracted then
-                      vim.cmd('bd ' .. result_buffer)
-                      return
-                  end
-                  lines = vim.split(extracted, '\n', true)
-              end
-              vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
-                                        start_pos[3] - 1, end_pos[2] - 1,
-                                        end_pos[3] - 1, lines)
-              vim.cmd('bd ' .. result_buffer)
-          end
-        end
-      })
+        vim.cmd('set syntax=on')
+        vim.fn.termopen(cmd, {
+            on_exit = function(a, b)
+                if b == 0 and opts.replace then
+                    local lines = trim_table(
+                                      vim.api.nvim_buf_get_lines(result_buffer,
+                                                                 0, -1, false))
+                    local text = table.concat(lines, '\n')
+                    if extractor then
+                        local extracted = text:match(extractor)
+                        if not extracted then
+                            vim.cmd('bd ' .. result_buffer)
+                            return
+                        end
+                        lines = vim.split(extracted, '\n', true)
+                    end
+                    vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
+                                              start_pos[3] - 1, end_pos[2] - 1,
+                                              end_pos[3] - 1, lines)
+                    vim.cmd('bd ' .. result_buffer)
+                end
+            end
+        })
     end)
     vim.api.nvim_buf_attach(result_buffer, false,
                             {on_detach = function() result_buffer = nil end})
