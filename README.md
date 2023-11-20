@@ -2,11 +2,6 @@
 
 Generate text using LLMs with customizable prompts
 
-# Important: Issue with ollama 0.1.10
-
-Currently, there are issues with Ollama 0.1.10, please use a previous version instead.
-See https://github.com/David-Kunz/gen.nvim/issues/32 for more information.
-
 ## Video
 
 [![Local LLMs in Neovim: gen.nvim](https://user-images.githubusercontent.com/1009936/273126287-7b5f2b40-c678-47c5-8f21-edf9516f6034.jpg)](https://youtu.be/FIZt7MinpMY?si=KChSuJJDyrcTdYiM)

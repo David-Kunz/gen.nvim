@@ -140,59 +140,29 @@ M.exec = function(options)
     local float_win = vim.api.nvim_open_win(result_buffer, true, win_opts)
 
     local result_string = ''
-    local lines = {}
     local job_id
-    job_id = vim.fn.jobstart(cmd, {
-        on_stdout = function(_, data, _)
-            -- window was closed, so cancel the job
-            if not vim.api.nvim_win_is_valid(float_win) then
-                vim.fn.jobstop(job_id)
-                return
-            end
-            result_string = result_string .. table.concat(data, '\n')
-            lines = vim.split(result_string, '\n', true)
-            vim.api.nvim_buf_set_lines(result_buffer, 0, -1, false, lines)
-            vim.api.nvim_win_call(float_win, function()
-                vim.fn.feedkeys('$')
-            end)
-        end,
-        on_stderr = function(_, data, _)
-            if opts.debugCommand then
-                -- window was closed, so cancel the job
-                if not vim.api.nvim_win_is_valid(float_win) then
-                    vim.fn.jobstop(job_id)
-                    return
-                end
-                result_string = result_string .. table.concat(data, '\n')
-                lines = vim.split(result_string, '\n', true)
-                vim.api.nvim_buf_set_lines(result_buffer, 0, -1, false, lines)
-                vim.api.nvim_win_call(float_win, function()
-                    vim.fn.feedkeys('$')
-                end)
-            end
-        end,
-        stderr_buffered = opts.debugCommand,
+    vim.api.nvim_buf_call(result_buffer, function()
+      vim.fn.termopen(cmd, {
         on_exit = function(a, b)
-            if b == 0 and opts.replace then
-                if extractor then
-                    local extracted = result_string:match(extractor)
-                    if not extracted then
-                        vim.cmd('bd ' .. result_buffer)
-                        return
-                    end
-                    lines = vim.split(extracted, '\n', true)
-                end
-                lines = trim_table(lines)
-                vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
-                                          start_pos[3] - 1, end_pos[2] - 1,
-                                          end_pos[3] - 1, lines)
-                vim.cmd('bd ' .. result_buffer)
-            end
+          if b == 0 and opts.replace then
+              local lines = trim_table(vim.api.nvim_buf_get_lines(result_buffer, 0, -1, false))
+              local text = table.concat(lines, '\n')
+              if extractor then
+                  local extracted = text:match(extractor)
+                  if not extracted then
+                      vim.cmd('bd ' .. result_buffer)
+                      return
+                  end
+                  lines = vim.split(extracted, '\n', true)
+              end
+              vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
+                                        start_pos[3] - 1, end_pos[2] - 1,
+                                        end_pos[3] - 1, lines)
+              vim.cmd('bd ' .. result_buffer)
+          end
         end
-    })
-    vim.keymap.set('n', '<esc>', function() vim.fn.jobstop(job_id) end,
-                   {buffer = result_buffer})
-
+      })
+    end)
     vim.api.nvim_buf_attach(result_buffer, false,
                             {on_detach = function() result_buffer = nil end})
 
