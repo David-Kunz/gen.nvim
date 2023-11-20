@@ -43,6 +43,8 @@ function write_to_buffer(lines)
 end
 
 M.exec = function(options)
+    local job_id
+
     if M.container ~= nil and M.command == "ollama run $model $prompt" then
         M.command = commandContainer
     end
@@ -82,6 +84,23 @@ M.exec = function(options)
         M.float_win = vim.fn.win_getid()
         vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
         vim.api.nvim_win_set_option(M.float_win, "wrap", true)
+
+        local group = vim.api.nvim_create_augroup("gen", { clear = true })
+        vim.api.nvim_create_autocmd("BufDelete", {
+            buffer = M.result_buffer,
+            group = group,
+            callback = function()
+                vim.fn.jobstop(job_id)
+
+                if vim.api.nvim_win_is_valid(M.float_win) then
+                    vim.api.nvim_win_close(M.float_win, true)
+                end
+
+                M.result_buffer = nil
+                M.float_win = nil
+            end,
+        })
+
         write_to_buffer({ "# Chat with " .. opts.model, "" })
     end
 
@@ -128,7 +147,6 @@ M.exec = function(options)
     end
 
     M.result_string = ""
-    local job_id
     local bodyData = {
         model = opts.model,
         prompt = prompt,
