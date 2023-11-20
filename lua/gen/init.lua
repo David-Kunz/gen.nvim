@@ -142,6 +142,7 @@ M.exec = function(options)
     local result_string = ''
     local job_id
     vim.api.nvim_buf_call(result_buffer, function()
+      vim.cmd('set syntax=on')
       vim.fn.termopen(cmd, {
         on_exit = function(a, b)
           if b == 0 and opts.replace then
