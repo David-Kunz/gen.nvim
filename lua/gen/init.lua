@@ -21,12 +21,21 @@ local function trim_table(tbl)
     return tbl
 end
 
-M.command = "ollama run $model $prompt"
 M.model = "mistral:instruct"
-M.container = nil
 M.debugCommand = false
+M.show_prompt = false
+M.auto_close_after_replace = true
+M.ollama_url = "http://localhost:11434"
 
-local commandContainer = "docker exec $container ollama run $model $prompt"
+M.setup = function(opts)
+    M.model = opts.model or M.model
+    M.debugCommand = opts.debugCommand or M.debugCommand
+    M.win_config = opts.win_config or M.win_config
+    M.show_prompt = opts.show_prompt == nil and M.show_prompt or opts.show_prompt
+    M.auto_close_after_replace = opts.auto_close_after_replace == nil and M.auto_close_after_replace
+        or opts.auto_close_after_replace
+    M.ollama_url = opts.ollama_url or M.ollama_url
+end
 
 function write_to_buffer(lines)
     if not vim.api.nvim_buf_is_valid(M.result_buffer) then
@@ -49,21 +58,20 @@ end
 M.exec = function(options)
     local job_id
 
-    if M.container ~= nil and M.command == "ollama run $model $prompt" then
-        M.command = commandContainer
-    end
     local opts = vim.tbl_deep_extend("force", {
         model = M.model,
-        command = M.container ~= nil and M.command_container or M.command,
-        container = M.container,
         debugCommand = M.debugCommand,
         win_config = M.win_config,
+        show_prompt = M.show_prompt,
+        auto_close_after_replace = M.auto_close_after_replace,
+        ollama_url = M.ollama_url,
     }, options)
-    if opts.container ~= nil then
-        pcall(io.popen, "docker start " .. opts.container)
-    else
-        pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
-    end
+
+    -- TODO: Should there be an option that specifies whether this is local ollama, a docker container, or external url?
+    -- This line could be called only if the option is for local ollama
+    -- There could be `docker run ...` command to create a container and run ollama in it
+    -- or we do neither if it's an external url.
+    pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
 
     curr_buffer = vim.fn.bufnr("%")
     local mode = opts.mode or vim.fn.mode()
@@ -96,7 +104,7 @@ M.exec = function(options)
             callback = function()
                 vim.fn.jobstop(job_id)
 
-                if vim.api.nvim_win_is_valid(M.float_win) then
+                if M.float_win ~= nil and vim.api.nvim_win_is_valid(M.float_win) then
                     vim.api.nvim_win_close(M.float_win, true)
                 end
 
@@ -142,13 +150,7 @@ M.exec = function(options)
     prompt = substitute_placeholders(prompt)
     local extractor = substitute_placeholders(opts.extract)
 
-    local cmd = opts.command
     prompt = string.gsub(prompt, "%%", "%%%%")
-    cmd = string.gsub(cmd, "%$prompt", prompt)
-    cmd = string.gsub(cmd, "%$model", opts.model)
-    if opts.container ~= nil then
-        cmd = string.gsub(cmd, "%$container", opts.container)
-    end
 
     M.result_string = ""
     local bodyData = {
@@ -162,17 +164,30 @@ M.exec = function(options)
     end
 
     local json = vim.fn.json_encode(bodyData)
-    cmd = "curl --silent -X POST http://localhost:11434/api/generate -d " .. vim.fn.shellescape(json)
+    local cmd = "curl --silent -X POST " .. opts.ollama_url .. "/api/generate -d " .. vim.fn.shellescape(json)
 
-    write_to_buffer({ "## Prompt:", "", prompt, "", "---", "" })
+    if opts.show_prompt then
+        local lines = vim.split(prompt, "\n")
+        local short_prompt = {}
+        for i = 1, #lines do
+            lines[i] = "> " .. lines[i]
+            table.insert(short_prompt, lines[i])
+            if i >= 3 then
+                if #lines > i then
+                    table.insert(short_prompt, "...")
+                end
+                break
+            end
+        end
+        write_to_buffer({ "## Prompt:", "", table.concat(short_prompt, "\n"), "", "---", "" })
+    end
 
     local partial_data = ""
     job_id = vim.fn.jobstart(cmd, {
-        -- stdout_buffered = true,
         stderr_buffered = opts.debugCommand,
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
-            if not vim.api.nvim_win_is_valid(M.float_win) then
+            if M.float_win == nil or not vim.api.nvim_win_is_valid(M.float_win) then
                 vim.fn.jobstop(job_id)
                 vim.api.nvim_buf_delete(M.result_buffer, { force = true })
                 M.result_buffer = nil
@@ -223,9 +238,12 @@ M.exec = function(options)
                 if extractor then
                     local extracted = M.result_string:match(extractor)
                     if not extracted then
-                        vim.api.nvim_buf_delete(M.result_buffer, { force = true })
-                        M.result_buffer = nil
-                        M.float_win = nil
+                        if opts.auto_close_after_replace then
+                            vim.api.nvim_win_hide(M.float_win)
+                            vim.api.nvim_buf_delete(M.result_buffer, { force = true })
+                            M.result_buffer = nil
+                            M.float_win = nil
+                        end
                         return
                     end
                     lines = vim.split(extracted, "\n", true)
@@ -241,10 +259,12 @@ M.exec = function(options)
                     end_pos[3] - 1,
                     lines
                 )
-                vim.api.nvim_win_hide(M.float_win)
-                vim.api.nvim_buf_delete(M.result_buffer, { force = true })
-                M.result_buffer = nil
-                M.float_win = nil
+                if opts.auto_close_after_replace then
+                    vim.api.nvim_win_hide(M.float_win)
+                    vim.api.nvim_buf_delete(M.result_buffer, { force = true })
+                    M.result_buffer = nil
+                    M.float_win = nil
+                end
             else
                 write_to_buffer({ "", "", "---", "" })
             end

@@ -11,6 +11,34 @@ Generate text using LLMs with customizable prompts
 
 - [Ollama](https://ollama.ai/) with an appropriate model, e.g. [`mistral:instruct`](https://ollama.ai/library/mistral) or [`zephyr`](https://ollama.ai/library/zephyr) (customizable)
 
+## Install
+
+Install with your favorite plugin manager, e.g. [lazy.nvim](https://github.com/folke/lazy.nvim)
+
+Example with Lazy
+
+```lua
+-- Minimal configuration
+{ "David-Kunz/gen.nvim" },
+
+```
+
+```lua
+
+-- Custom Parameters
+{
+    "David-Kunz/gen.nvim",
+    opts = {
+        model = "zephyr",                            -- The default model to use. Defaults to "mistral:instruct"
+        debugCommand = true,                         -- Prints errors. Defaults to false.
+        show_prompt = true,                          -- Shows the Prompt submitted to ollama. Defaults to false.
+        auto_close_after_replace = false,            -- Closes the window after replacing the text. Defaults to true.
+        ollama_url = "http://ollama.myserver.com",   -- The url of ollama service. Defaults to "http://localhost:11434"
+    }
+},
+```
+
+
 ## Usage
 
 Use command `Gen` to generate text based on predefined and customizable prompts.
@@ -57,26 +85,17 @@ You can use the following properties per prompt:
 - `model`: The model to use, e.g. `zephyr`, default: `mistral:instruct`
 - `container`: Specify name of ollama container if you are using Docker to host ollama service
 
-You can change the default model by setting `require('gen').model = 'your_model'`, e.g.
+## Host Ollama in Docker
 
-```lua
-require('gen').model = 'zephyr' -- default 'mistral:instruct'
+You can host ollama in a docker container. The following command will host ollama on port 11434.
+
+```bash
+docker run -p 11434:11434 -d --name ollama ollama/ollama:latest
 ```
 
-Here are all [available models](https://ollama.ai/library).
+To add models to the container, you can use the following command:
+Replace `llama2:chat` with the model you want to add.
 
-You can also change the complete command with
-
-```lua
-require('gen').command = 'your command' -- default 'ollama run $model $prompt'
+```bash
+docker exec -it ollama ollama pull llama2:chat
 ```
-
-You can use the placeholders `$model`, `$prompt` and `$container`.
-
-You can specify Docker container that hosts ollama
-
-```lua
-require('gen').container = 'container name' -- default nil
-```
-Default command will then change to
-`'docker exec $container ollama run $model $prompt'`
