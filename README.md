@@ -2,7 +2,7 @@
 
 Generate text using LLMs with customizable prompts
 
-[![Quick Demo of gen.nvim](./img/gen_nvim.gif)]
+![Quick Demo of gen.nvim](./img/gen_nvim.gif)
 
 ## Video
 
