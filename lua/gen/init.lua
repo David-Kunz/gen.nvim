@@ -50,7 +50,7 @@ M.exec = function(options)
     end
     local opts = vim.tbl_deep_extend("force", {
         model = M.model,
-        command = M.command,
+        command = M.container ~= nil and M.command_container or M.command,
         container = M.container,
         debugCommand = M.debugCommand,
         win_config = M.win_config,
