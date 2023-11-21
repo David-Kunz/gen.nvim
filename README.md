@@ -38,6 +38,8 @@ Example with Lazy
 },
 ```
 
+Here are all [available models](https://ollama.ai/library).
+
 
 ## Usage
 
