@@ -29,6 +29,10 @@ M.debugCommand = false
 local commandContainer = "docker exec $container ollama run $model $prompt"
 
 function write_to_buffer(lines)
+    if not vim.api.nvim_buf_is_valid(M.result_buffer) then
+        return
+    end
+
     local all_lines = vim.api.nvim_buf_get_lines(M.result_buffer, 0, -1, false)
 
     local last_row = #all_lines
@@ -170,7 +174,7 @@ M.exec = function(options)
             -- window was closed, so cancel the job
             if not vim.api.nvim_win_is_valid(M.float_win) then
                 vim.fn.jobstop(job_id)
-                vim.cmd("bd! " .. M.result_buffer)
+                vim.api.nvim_buf_delete(M.result_buffer, { force = true })
                 M.result_buffer = nil
                 M.float_win = nil
                 return
@@ -219,7 +223,7 @@ M.exec = function(options)
                 if extractor then
                     local extracted = M.result_string:match(extractor)
                     if not extracted then
-                        vim.cmd("bd! " .. M.result_buffer)
+                        vim.api.nvim_buf_delete(M.result_buffer, { force = true })
                         M.result_buffer = nil
                         M.float_win = nil
                         return
