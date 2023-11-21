@@ -2,6 +2,8 @@
 
 Generate text using LLMs with customizable prompts
 
+[![Quick Demo of gen.nvim](https://user-images.githubusercontent.com/1009936/273126287-7b5f2b40-c678-47c5-8f21-edf9516f6034.jpg)]
+
 ## Video
 
 [![Local LLMs in Neovim: gen.nvim](https://user-images.githubusercontent.com/1009936/273126287-7b5f2b40-c678-47c5-8f21-edf9516f6034.jpg)](https://youtu.be/FIZt7MinpMY?si=KChSuJJDyrcTdYiM)
@@ -58,7 +60,7 @@ You can also directly invoke it with one of the [predefined prompts](./lua/gen/p
 vim.keymap.set('v', '<leader>]', ':Gen Enhance_Grammar_Spelling<CR>')
 ```
 
-## Options
+## Custom Prompts
 
 All prompts are defined in `require('gen').prompts`, you can enhance or modify them.
 
