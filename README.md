@@ -31,13 +31,14 @@ Example with Lazy
 {
     "David-Kunz/gen.nvim",
     opts = {
-        model = "mistral:instruct",                  -- The default model to use.
-        debugCommand = false,                        -- Prints errors.
-        display_mode = "float",                      -- The display mode. Can be "float" or "split".
-        show_prompt = false,                         -- Shows the Prompt submitted to ollama.
-        show_model = false,                          -- Displays which model you are using at the beginning of your chat session.
-        auto_close_after_replace = true,             -- Closes the window after replacing the text.
-        command = "curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body",       -- The url of ollama service. You can use placeholders $prompt, $body
+        model = "mistral:instruct", -- The default model to use.
+        debugCommand = false, -- Prints errors.
+        display_mode = "float", -- The display mode. Can be "float" or "split".
+        show_prompt = false, -- Shows the Prompt submitted to ollama.
+        show_model = false, -- Displays which model you are using at the beginning of your chat session.
+        auto_close_after_replace = true, -- Closes the window after replacing the text.
+        command = "curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body",
+        -- The url of ollama service. You can use placeholders $prompt, $body
     }
 },
 ```
