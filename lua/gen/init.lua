@@ -214,6 +214,7 @@ M.exec = function(options)
         local prompt_escaped = vim.fn.shellescape(prompt)
         cmd = string.gsub(cmd, "%$prompt", prompt_escaped)
     end
+    cmd = string.gsub(cmd, "%$model", opts.model)
     if string.find(cmd, "%$body") then
         local body = {model = opts.model, prompt = prompt, stream = true}
         if M.context then body.context = M.context end
