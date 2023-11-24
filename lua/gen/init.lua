@@ -210,25 +210,12 @@ M.exec = function(options)
 
     if M.context ~= nil then write_to_buffer({"", "", "---", ""}) end
 
-    if opts.show_prompt then
-        local lines = vim.split(prompt, "\n")
-        local short_prompt = {}
-        for i = 1, #lines do
-            lines[i] = "> " .. lines[i]
-            table.insert(short_prompt, lines[i])
-            if i >= 3 then
-                if #lines > i then
-                    table.insert(short_prompt, "...")
-                end
-                break
-            end
+    if M.result_buffer == nil or M.float_win == nil or
+        not vim.api.nvim_win_is_valid(M.float_win) then
+        create_window(opts, job_id)
+        if opts.show_model then
+            write_to_buffer({"# Chat with " .. opts.model, ""})
         end
-        local heading = "#"
-        if M.show_model then heading = "##" end
-        write_to_buffer({
-            heading .. " Prompt:", "", table.concat(short_prompt, "\n"), "",
-            "---", ""
-        })
     end
 
     local partial_data = ""
@@ -315,12 +302,25 @@ M.exec = function(options)
         end
     })
 
-    if M.result_buffer == nil or M.float_win == nil or
-        not vim.api.nvim_win_is_valid(M.float_win) then
-        create_window(opts, job_id)
-        if M.show_model then
-            write_to_buffer({"# Chat with " .. opts.model, ""})
+    if opts.show_prompt then
+        local lines = vim.split(prompt, "\n")
+        local short_prompt = {}
+        for i = 1, #lines do
+            lines[i] = "> " .. lines[i]
+            table.insert(short_prompt, lines[i])
+            if i >= 3 then
+                if #lines > i then
+                    table.insert(short_prompt, "...")
+                end
+                break
+            end
         end
+        local heading = "#"
+        if M.show_model then heading = "##" end
+        write_to_buffer({
+            heading .. " Prompt:", "", table.concat(short_prompt, "\n"), "",
+            "---", ""
+        })
     end
 
     vim.keymap.set("n", "<esc>", function() vim.fn.jobstop(job_id) end,
