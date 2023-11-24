@@ -36,7 +36,7 @@ Example with Lazy
         display_mode = "float", -- The display mode. Can be "float" or "split".
         show_prompt = false, -- Shows the Prompt submitted to ollama.
         show_model = false, -- Displays which model you are using at the beginning of your chat session.
-        auto_close_after_replace = true, -- Closes the window after replacing the text.
+        no_auto_close = false, -- Never closes the window automatically.
         no_serve = false, -- Set to true if Ollama shall not be served automatically.
         command = "curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body",
         -- The url of ollama service. You can use placeholders $prompt, $model and $body (shellescaped).

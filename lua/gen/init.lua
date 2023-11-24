@@ -25,28 +25,12 @@ M.show_prompt = false
 M.show_model = false
 M.command =
     'curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body'
-M.auto_close_after_replace = true
+M.no_auto_close = false
 M.display_mode = "float"
 M.no_serve = false
 
 M.setup = function(opts)
-    M.model = opts.model or M.model
-    M.debugCommand = opts.debugCommand or M.debugCommand
-    M.win_config = opts.win_config or M.win_config
-    M.show_prompt = opts.show_prompt == nil and M.show_prompt or
-                        opts.show_prompt
-    M.show_model = opts.show_model == nil and M.show_model or opts.show_model
-    M.auto_close_after_replace = opts.auto_close_after_replace == nil and
-                                     M.auto_close_after_replace or
-                                     opts.auto_close_after_replace
-
-    M.no_serve = opts.no_serve or M.no_serve
-    M.command = opts.command or M.command
-    if opts.display_mode == "float" or opts.display_mode == "split" then
-        M.display_mode = opts.display_mode
-    else
-        M.display_mode = "float"
-    end
+    vim.tbl_deep_extend("force", M, opts)
 end
 
 local function get_window_options()
@@ -148,7 +132,7 @@ M.exec = function(options)
         show_model = M.show_model,
         command = M.command,
         no_serve = M.no_serve,
-        auto_close_after_replace = M.auto_close_after_replace
+        no_auto_close = M.no_auto_close
     }, options)
 
     if opts.no_serve == false then
@@ -306,7 +290,7 @@ M.exec = function(options)
                 if extractor then
                     local extracted = M.result_string:match(extractor)
                     if not extracted then
-                        if opts.auto_close_after_replace then
+                        if not opts.no_auto_close then
                             vim.api.nvim_win_hide(M.float_win)
                             vim.api.nvim_buf_delete(M.result_buffer,
                                                     {force = true})
@@ -322,7 +306,7 @@ M.exec = function(options)
                 vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
                                           start_pos[3] - 1, end_pos[2] - 1,
                                           end_pos[3] - 1, lines)
-                if opts.auto_close_after_replace then
+                if not opts.no_auto_close then
                     vim.api.nvim_win_hide(M.float_win)
                     vim.api.nvim_buf_delete(M.result_buffer, {force = true})
                     reset()
