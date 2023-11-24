@@ -123,16 +123,7 @@ function reset()
 end
 
 M.exec = function(options)
-    local opts = vim.tbl_deep_extend("force", {
-        model = M.model,
-        debugCommand = M.debugCommand,
-        win_config = M.win_config,
-        show_prompt = M.show_prompt,
-        show_model = M.show_model,
-        command = M.command,
-        no_serve = M.no_serve,
-        no_auto_close = M.no_auto_close
-    }, options)
+    local opts = vim.tbl_deep_extend("force", M, options)
 
     if opts.no_serve == false then
         pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
