@@ -25,6 +25,7 @@ M.model = "mistral:instruct"
 M.debugCommand = false
 M.show_prompt = false
 M.show_model = false
+M.command = 'curl --silent --no-buffer -X POST $url /api/generate -d $body'
 M.auto_close_after_replace = true
 M.display_mode = "float"
 M.ollama_url = "http://localhost:11434"
@@ -141,6 +142,7 @@ M.exec = function(options)
         win_config = M.win_config,
         show_prompt = M.show_prompt,
         show_model = M.show_model,
+        command = M.command,
         auto_close_after_replace = M.auto_close_after_replace,
         ollama_url = M.ollama_url,
     }, options)
@@ -205,21 +207,28 @@ M.exec = function(options)
     prompt = string.gsub(prompt, "%%", "%%%%")
 
     M.result_string = ""
-    local bodyData = {
-        model = opts.model,
-        prompt = prompt,
-        stream = true,
-    }
 
-    if M.context then
-        bodyData.context = M.context
+
+    local cmd = M.command
+
+    if string.find(cmd, "%$body") then
+        local body = {
+            model = opts.model,
+            prompt = prompt,
+            stream = true,
+        }
+        if M.context then
+            body.context = M.context
+        end
+        local json = vim.fn.json_encode(body)
+        json = vim.fn.shellescape(json)
+        cmd = string.gsub(cmd, "%$body", json)
     end
-
-    local json = vim.fn.json_encode(bodyData)
-    local cmd = "curl --silent --no-buffer -X POST "
-        .. opts.ollama_url
-        .. "/api/generate -d "
-        .. vim.fn.shellescape(json)
+    cmd = string.gsub(cmd, "%$url", M.ollama_url)
+    -- local cmd = "curl --silent --no-buffer -X POST "
+    --     .. opts.ollama_url
+    --     .. "/api/generate -d "
+    --     .. vim.fn.shellescape(json)
 
     if M.context ~= nil then
         write_to_buffer({ "", "", "---", "" })
@@ -246,6 +255,7 @@ M.exec = function(options)
     end
 
     local partial_data = ""
+    print(cmd)
     local job_id = vim.fn.jobstart(cmd, {
         -- stderr_buffered = opts.debugCommand,
         on_stdout = function(_, data, _)
