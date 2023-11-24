@@ -91,7 +91,6 @@ You can use the following properties per prompt:
 - `replace`: `true` if the selected text shall be replaced with the generated output
 - `extract`: Regular expression used to extract the generated result
 - `model`: The model to use, e.g. `zephyr`, default: `mistral:instruct`
-- `container`: Specify name of ollama container if you are using Docker to host ollama service
 
 ## Host Ollama in Docker
 
