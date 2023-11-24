@@ -78,7 +78,7 @@ local function get_window_options()
 end
 
 function write_to_buffer(lines)
-    if not vim.api.nvim_buf_is_valid(M.result_buffer) then
+    if M.result_buffer ~= nil and not vim.api.nvim_buf_is_valid(M.result_buffer) then
         return
     end
 
@@ -95,10 +95,10 @@ function write_to_buffer(lines)
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
 end
 
-function create_window(opts)
+function create_window(opts, job_id)
     if M.display_mode == "float" then
         if M.result_buffer then
-            vim.cmd("bd" .. M.result_buffer)
+            vim.api.nvim_buf_delete(M.result_buffer, { force = true })
         end
         local win_opts = vim.tbl_deep_extend("force", get_window_options(), opts.win_config)
         M.result_buffer = vim.api.nvim_create_buf(false, true)
@@ -111,28 +111,30 @@ function create_window(opts)
         M.float_win = vim.fn.win_getid()
         vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
         vim.api.nvim_win_set_option(M.float_win, "wrap", true)
-
-        local group = vim.api.nvim_create_augroup("gen", { clear = true })
-        vim.api.nvim_create_autocmd("BufDelete", {
-            buffer = M.result_buffer,
-            group = group,
-            callback = function()
-                vim.fn.jobstop(job_id)
-
-                if M.float_win ~= nil and vim.api.nvim_win_is_valid(M.float_win) then
-                    vim.api.nvim_win_close(M.float_win, true)
-                end
-
-                M.result_buffer = nil
-                M.float_win = nil
-            end,
-        })
     end
+
+    local group = vim.api.nvim_create_augroup("gen", { clear = true })
+    vim.api.nvim_create_autocmd("BufDelete", {
+        buffer = M.result_buffer,
+        group = group,
+        callback = function()
+            vim.fn.jobstop(job_id)
+            if M.float_win ~= nil and vim.api.nvim_win_is_valid(M.float_win) then
+                vim.api.nvim_win_close(M.float_win, true)
+            end
+            reset()
+        end,
+    })
+end
+
+function reset()
+    M.result_buffer = nil
+    M.float_win = nil
+    M.result_string = ""
+    M.context = nil
 end
 
 M.exec = function(options)
-    local job_id
-
     local opts = vim.tbl_deep_extend("force", {
         model = M.model,
         debugCommand = M.debugCommand,
@@ -147,7 +149,7 @@ M.exec = function(options)
     -- This line could be called only if the option is for local ollama
     -- There could be `docker run ...` command to create a container and run ollama in it
     -- or we do neither if it's an external url.
-    pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
+    -- pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
 
     curr_buffer = vim.fn.bufnr("%")
     local mode = opts.mode or vim.fn.mode()
@@ -165,13 +167,6 @@ M.exec = function(options)
         vim.api.nvim_buf_get_text(curr_buffer, start_pos[2] - 1, start_pos[3] - 1, end_pos[2] - 1, end_pos[3] - 1, {}),
         "\n"
     )
-
-    if M.result_buffer == nil then
-        create_window(opts)
-        if M.show_model then
-            write_to_buffer({ "# Chat with " .. opts.model, "" })
-        end
-    end
 
     local function substitute_placeholders(input)
         if not input then
@@ -221,7 +216,14 @@ M.exec = function(options)
     end
 
     local json = vim.fn.json_encode(bodyData)
-    local cmd = "curl --silent -X POST " .. opts.ollama_url .. "/api/generate -d " .. vim.fn.shellescape(json)
+    local cmd = "curl --silent --no-buffer -X POST "
+        .. opts.ollama_url
+        .. "/api/generate -d "
+        .. vim.fn.shellescape(json)
+
+    if M.context ~= nil then
+        write_to_buffer({ "", "", "---", "" })
+    end
 
     if opts.show_prompt then
         local lines = vim.split(prompt, "\n")
@@ -236,19 +238,22 @@ M.exec = function(options)
                 break
             end
         end
-        write_to_buffer({ "## Prompt:", "", table.concat(short_prompt, "\n"), "", "---", "" })
+        local heading = "#"
+        if M.show_model then
+            heading = "##"
+        end
+        write_to_buffer({ heading .. " Prompt:", "", table.concat(short_prompt, "\n"), "", "---", "" })
     end
 
     local partial_data = ""
-    job_id = vim.fn.jobstart(cmd, {
-        stderr_buffered = opts.debugCommand,
+    local job_id = vim.fn.jobstart(cmd, {
+        -- stderr_buffered = opts.debugCommand,
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
             if M.float_win == nil or not vim.api.nvim_win_is_valid(M.float_win) then
                 vim.fn.jobstop(job_id)
                 vim.api.nvim_buf_delete(M.result_buffer, { force = true })
-                M.result_buffer = nil
-                M.float_win = nil
+                reset()
                 return
             end
 
@@ -264,11 +269,11 @@ M.exec = function(options)
             partial_data = table.remove(lines) or ""
 
             for _, line in ipairs(lines) do
-                process_response(line)
+                process_response(line, job_id)
             end
 
             if partial_data:sub(-1) == "}" then
-                process_response(partial_data)
+                process_response(partial_data, job_id)
                 partial_data = ""
             end
         end,
@@ -298,8 +303,7 @@ M.exec = function(options)
                         if opts.auto_close_after_replace then
                             vim.api.nvim_win_hide(M.float_win)
                             vim.api.nvim_buf_delete(M.result_buffer, { force = true })
-                            M.result_buffer = nil
-                            M.float_win = nil
+                            reset()
                         end
                         return
                     end
@@ -319,15 +323,20 @@ M.exec = function(options)
                 if opts.auto_close_after_replace then
                     vim.api.nvim_win_hide(M.float_win)
                     vim.api.nvim_buf_delete(M.result_buffer, { force = true })
-                    M.result_buffer = nil
-                    M.float_win = nil
+                    reset()
                 end
-            else
-                write_to_buffer({ "", "", "---", "" })
             end
             M.result_string = ""
         end,
     })
+
+    if M.result_buffer == nil or M.float_win == nil or not vim.api.nvim_win_is_valid(M.float_win) then
+        create_window(opts, job_id)
+        if M.show_model then
+            write_to_buffer({ "# Chat with " .. opts.model, "" })
+        end
+    end
+
     vim.keymap.set("n", "<esc>", function()
         vim.fn.jobstop(job_id)
     end, { buffer = M.result_buffer })
@@ -396,7 +405,7 @@ end, {
     end,
 })
 
-function process_response(str)
+function process_response(str, job_id)
     if string.len(str) == 0 then
         return
     end
@@ -410,6 +419,7 @@ function process_response(str)
         body = result
     else
         write_to_buffer({ "", "====== ERROR ====", str, "-------------", "" })
+        vim.fn.jobstop(job_id)
     end
 
     if body == nil then
