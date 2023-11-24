@@ -25,6 +25,7 @@ M.show_prompt = false
 M.show_model = false
 M.command =
     'curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body'
+M.json_response = true
 M.no_auto_close = false
 M.display_mode = "float"
 M.no_auto_close = false
@@ -236,11 +237,11 @@ M.exec = function(options)
             partial_data = table.remove(lines) or ""
 
             for _, line in ipairs(lines) do
-                process_response(line, job_id)
+                process_response(line, job_id, opts.json_response)
             end
 
             if partial_data:sub(-1) == "}" then
-                process_response(partial_data, job_id)
+                process_response(partial_data, job_id, opts.json_response)
                 partial_data = ""
             end
         end,
@@ -372,26 +373,32 @@ end, {
     end
 })
 
-function process_response(str, job_id)
+function process_response(str, job_id, json_response)
     if string.len(str) == 0 then return end
+    local text
 
-    local success, result = pcall(function() return vim.fn.json_decode(str) end)
+    if json_response then
+        local success, result = pcall(function()
+            return vim.fn.json_decode(str)
+        end)
 
-    local body = {}
-    if success then
-        body = result
+        if success then
+            text = result.response
+            if result.context ~= nil then M.context = result.context end
+        else
+            write_to_buffer({"", "====== ERROR ====", str, "-------------", ""})
+            vim.fn.jobstop(job_id)
+        end
     else
-        write_to_buffer({"", "====== ERROR ====", str, "-------------", ""})
-        vim.fn.jobstop(job_id)
+        text = str
     end
 
-    if body == nil then return end
+    if text == nil then return end
 
-    M.result_string = M.result_string .. body.response
-    local lines = vim.split(body.response, "\n")
+    M.result_string = M.result_string .. text
+    local lines = vim.split(text, "\n")
     write_to_buffer(lines)
 
-    if body.context ~= nil then M.context = body.context end
 end
 
 return M
