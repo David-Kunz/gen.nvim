@@ -149,7 +149,7 @@ M.exec = function(options)
     -- This line could be called only if the option is for local ollama
     -- There could be `docker run ...` command to create a container and run ollama in it
     -- or we do neither if it's an external url.
-    -- pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
+    pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
 
     curr_buffer = vim.fn.bufnr("%")
     local mode = opts.mode or vim.fn.mode()
