@@ -39,6 +39,7 @@ M.setup = function(opts)
                                      M.auto_close_after_replace or
                                      opts.auto_close_after_replace
 
+    M.command = opts.command or M.command
     if opts.display_mode == "float" or opts.display_mode == "split" then
         M.display_mode = opts.display_mode
     else
