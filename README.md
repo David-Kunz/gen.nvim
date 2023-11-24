@@ -31,11 +31,13 @@ Example with Lazy
 {
     "David-Kunz/gen.nvim",
     opts = {
-        model = "zephyr",                            -- The default model to use. Defaults to "mistral:instruct"
-        debugCommand = true,                         -- Prints errors. Defaults to false.
-        show_prompt = true,                          -- Shows the Prompt submitted to ollama. Defaults to false.
-        auto_close_after_replace = false,            -- Closes the window after replacing the text. Defaults to true.
-        ollama_url = "http://ollama.myserver.com",   -- The url of ollama service. Defaults to "http://localhost:11434"
+        model = "mistral:instruct",                  -- The default model to use. Defaults to "mistral:instruct"
+        debugCommand = false,                        -- Prints errors. Defaults to false.
+        display_mode = "float",                      -- The display mode. Can be "float" or "split". Defaults to "float".
+        show_prompt = false,                         -- Shows the Prompt submitted to ollama. Defaults to false.
+        show_model = false,                          -- Displays which model you are using at the beginning of your chat session. Defautls to false.
+        auto_close_after_replace = true,             -- Closes the window after replacing the text. Defaults to true.
+        ollama_url = "http://localhost:11434",       -- The url of ollama service. Defaults to "http://localhost:11434"
     }
 },
 ```

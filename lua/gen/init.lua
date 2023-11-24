@@ -24,7 +24,9 @@ end
 M.model = "mistral:instruct"
 M.debugCommand = false
 M.show_prompt = false
+M.show_model = false
 M.auto_close_after_replace = true
+M.display_mode = "float"
 M.ollama_url = "http://localhost:11434"
 
 M.setup = function(opts)
@@ -32,9 +34,47 @@ M.setup = function(opts)
     M.debugCommand = opts.debugCommand or M.debugCommand
     M.win_config = opts.win_config or M.win_config
     M.show_prompt = opts.show_prompt == nil and M.show_prompt or opts.show_prompt
+    M.show_model = opts.show_model == nil and M.show_model or opts.show_model
     M.auto_close_after_replace = opts.auto_close_after_replace == nil and M.auto_close_after_replace
         or opts.auto_close_after_replace
     M.ollama_url = opts.ollama_url or M.ollama_url
+
+    if opts.display_mode == "float" or opts.display_mode == "split" then
+        M.display_mode = opts.display_mode
+    else
+        M.display_mode = "float"
+    end
+end
+
+local function get_window_options()
+    local width = math.floor(vim.o.columns * 0.9) -- 90% of the current editor's width
+    local height = math.floor(vim.o.lines * 0.9)
+    local row = math.floor((vim.o.lines - height) / 2)
+    local col = math.floor((vim.o.columns - width) / 2)
+
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local new_win_width = vim.api.nvim_win_get_width(0)
+    local win_height = vim.api.nvim_win_get_height(0)
+
+    local middle_row = win_height / 2
+
+    local new_win_height = math.floor(win_height / 2)
+    local new_win_row
+    if cursor[1] <= middle_row then
+        new_win_row = 5
+    else
+        new_win_row = -5 - new_win_height
+    end
+
+    return {
+        relative = "cursor",
+        width = new_win_width,
+        height = new_win_height,
+        row = new_win_row,
+        col = 0,
+        style = "minimal",
+        border = "single",
+    }
 end
 
 function write_to_buffer(lines)
@@ -55,6 +95,41 @@ function write_to_buffer(lines)
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
 end
 
+function create_window(opts)
+    if M.display_mode == "float" then
+        if M.result_buffer then
+            vim.cmd("bd" .. M.result_buffer)
+        end
+        local win_opts = vim.tbl_deep_extend("force", get_window_options(), opts.win_config)
+        M.result_buffer = vim.api.nvim_create_buf(false, true)
+        vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
+
+        M.float_win = vim.api.nvim_open_win(M.result_buffer, true, win_opts)
+    else
+        vim.cmd("vnew")
+        M.result_buffer = vim.fn.bufnr("%")
+        M.float_win = vim.fn.win_getid()
+        vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
+        vim.api.nvim_win_set_option(M.float_win, "wrap", true)
+
+        local group = vim.api.nvim_create_augroup("gen", { clear = true })
+        vim.api.nvim_create_autocmd("BufDelete", {
+            buffer = M.result_buffer,
+            group = group,
+            callback = function()
+                vim.fn.jobstop(job_id)
+
+                if M.float_win ~= nil and vim.api.nvim_win_is_valid(M.float_win) then
+                    vim.api.nvim_win_close(M.float_win, true)
+                end
+
+                M.result_buffer = nil
+                M.float_win = nil
+            end,
+        })
+    end
+end
+
 M.exec = function(options)
     local job_id
 
@@ -63,6 +138,7 @@ M.exec = function(options)
         debugCommand = M.debugCommand,
         win_config = M.win_config,
         show_prompt = M.show_prompt,
+        show_model = M.show_model,
         auto_close_after_replace = M.auto_close_after_replace,
         ollama_url = M.ollama_url,
     }, options)
@@ -91,29 +167,10 @@ M.exec = function(options)
     )
 
     if M.result_buffer == nil then
-        vim.cmd("vnew")
-        M.result_buffer = vim.fn.bufnr("%")
-        M.float_win = vim.fn.win_getid()
-        vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
-        vim.api.nvim_win_set_option(M.float_win, "wrap", true)
-
-        local group = vim.api.nvim_create_augroup("gen", { clear = true })
-        vim.api.nvim_create_autocmd("BufDelete", {
-            buffer = M.result_buffer,
-            group = group,
-            callback = function()
-                vim.fn.jobstop(job_id)
-
-                if M.float_win ~= nil and vim.api.nvim_win_is_valid(M.float_win) then
-                    vim.api.nvim_win_close(M.float_win, true)
-                end
-
-                M.result_buffer = nil
-                M.float_win = nil
-            end,
-        })
-
-        write_to_buffer({ "# Chat with " .. opts.model, "" })
+        create_window(opts)
+        if M.show_model then
+            write_to_buffer({ "# Chat with " .. opts.model, "" })
+        end
     end
 
     local function substitute_placeholders(input)
