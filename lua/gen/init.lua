@@ -81,7 +81,7 @@ local function get_window_options()
 end
 
 function write_to_buffer(lines)
-    if M.result_buffer ~= nil and not vim.api.nvim_buf_is_valid(M.result_buffer) then
+    if not M.result_buffer or not vim.api.nvim_buf_is_valid(M.result_buffer) then
         return
     end
 
@@ -254,9 +254,11 @@ M.exec = function(options)
         -- stderr_buffered = opts.debugCommand,
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
-            if M.float_win == nil or not vim.api.nvim_win_is_valid(M.float_win) then
-                vim.fn.jobstop(job_id)
-                vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+            if not M.float_win or not vim.api.nvim_win_is_valid(M.float_win) then
+                if job_id then vim.fn.jobstop(job_id) end
+                if M.result_buffer then
+                    vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+                end
                 reset()
                 return
             end
@@ -299,7 +301,7 @@ M.exec = function(options)
             end
         end,
         on_exit = function(a, b)
-            if b == 0 and opts.replace then
+            if b == 0 and opts.replace and M.result_buffer then
                 local lines = {}
                 if extractor then
                     local extracted = M.result_string:match(extractor)
