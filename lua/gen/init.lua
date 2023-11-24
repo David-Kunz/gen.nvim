@@ -248,12 +248,12 @@ M.exec = function(options)
         on_stderr = function(_, data, _)
             if opts.debugCommand then
                 -- window was closed, so cancel the job
-                if not vim.api.nvim_win_is_valid(M.float_win) then
-                    vim.fn.jobstop(job_id)
+                if not M.float_win or not vim.api.nvim_win_is_valid(M.float_win) then
+                    if job_id then vim.fn.jobstop(job_id) end
                     return
                 end
 
-                if data == nil or string.len(data) == 0 then
+                if data == nil or #data == 0 then
                     return
                 end
 
