@@ -27,11 +27,10 @@ M.command =
     'curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body'
 M.no_auto_close = false
 M.display_mode = "float"
+M.no_auto_close = false
 M.no_serve = false
 
-M.setup = function(opts)
-    vim.tbl_deep_extend("force", M, opts)
-end
+M.setup = function(opts) M = vim.tbl_deep_extend("force", M, opts) end
 
 local function get_window_options()
     local width = math.floor(vim.o.columns * 0.9) -- 90% of the current editor's width
