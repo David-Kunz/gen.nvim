@@ -27,6 +27,7 @@ M.command =
     'curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body'
 M.auto_close_after_replace = true
 M.display_mode = "float"
+M.no_serve = false
 
 M.setup = function(opts)
     M.model = opts.model or M.model
@@ -39,6 +40,7 @@ M.setup = function(opts)
                                      M.auto_close_after_replace or
                                      opts.auto_close_after_replace
 
+    M.no_serve = opts.no_serve or M.no_serve
     M.command = opts.command or M.command
     if opts.display_mode == "float" or opts.display_mode == "split" then
         M.display_mode = opts.display_mode
@@ -145,14 +147,13 @@ M.exec = function(options)
         show_prompt = M.show_prompt,
         show_model = M.show_model,
         command = M.command,
+        no_serve = M.no_serve,
         auto_close_after_replace = M.auto_close_after_replace
     }, options)
 
-    -- TODO: Should there be an option that specifies whether this is local ollama, a docker container, or external url?
-    -- This line could be called only if the option is for local ollama
-    -- There could be `docker run ...` command to create a container and run ollama in it
-    -- or we do neither if it's an external url.
-    pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
+    if opts.no_serve == false then
+        pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
+    end
 
     curr_buffer = vim.fn.bufnr("%")
     local mode = opts.mode or vim.fn.mode()
