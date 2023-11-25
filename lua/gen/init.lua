@@ -29,7 +29,7 @@ local default_options = {
     no_auto_close = false,
     display_mode = "float",
     no_auto_close = false,
-    no_serve = false
+    init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end
 }
 for k, v in pairs(default_options) do M[k] = v end
 
@@ -116,9 +116,7 @@ end
 M.exec = function(options)
     local opts = vim.tbl_deep_extend("force", M, options)
 
-    if opts.no_serve == false then
-        pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
-    end
+    if type(opts.init) == 'function' then opts.init(opts) end
 
     curr_buffer = vim.fn.bufnr("%")
     local mode = opts.mode or vim.fn.mode()
