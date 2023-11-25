@@ -295,8 +295,6 @@ M.exec = function(options)
         end
     })
 
-
-
     if opts.show_prompt then
         local lines = vim.split(prompt, "\n")
         local short_prompt = {}
