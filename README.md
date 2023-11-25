@@ -4,7 +4,7 @@ Generate text using LLMs with customizable prompts
 
 ![Quick Demo of gen.nvim](./img/gen_nvim.gif)
 
-## Video (TODO: This video is now outdated... do you want it removed?)
+## Video
 
 [![Local LLMs in Neovim: gen.nvim](https://user-images.githubusercontent.com/1009936/273126287-7b5f2b40-c678-47c5-8f21-edf9516f6034.jpg)](https://youtu.be/FIZt7MinpMY?si=KChSuJJDyrcTdYiM)
 
@@ -33,12 +33,12 @@ Example with Lazy
     opts = {
         model = "mistral:instruct", -- The default model to use.
         display_mode = "float", -- The display mode. Can be "float" or "split".
-        show_prompt = false, -- Shows the Prompt submitted to ollama.
+        show_prompt = false, -- Shows the Prompt submitted to Ollama.
         show_model = false, -- Displays which model you are using at the beginning of your chat session.
         no_auto_close = false, -- Never closes the window automatically.
         no_serve = false, -- Set to true if Ollama shall not be served automatically.
         command = "curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body",
-        -- The url of ollama service. You can use placeholders $prompt, $model and $body (shellescaped).
+        -- The command for thr Ollama service. You can use placeholders $prompt, $model and $body (shellescaped).
         debug = false -- Prints errors and the command which is run.
     }
 },
@@ -99,18 +99,3 @@ You can use the following properties per prompt:
 - `replace`: `true` if the selected text shall be replaced with the generated output
 - `extract`: Regular expression used to extract the generated result
 - `model`: The model to use, e.g. `zephyr`, default: `mistral:instruct`
-
-## Host Ollama in Docker
-
-You can host ollama in a docker container. The following command will host ollama on port 11434.
-
-```bash
-docker run -p 11434:11434 -d --name ollama ollama/ollama:latest
-```
-
-To add models to the container, you can use the following command:
-Replace `llama2:chat` with the model you want to add.
-
-```bash
-docker exec -it ollama ollama pull llama2:chat
-```
