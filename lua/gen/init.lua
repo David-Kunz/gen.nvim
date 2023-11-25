@@ -420,8 +420,12 @@ end
 
 M.select_model = function()
     local models = M.list_models()
-    vim.ui.select(models, {prompt = "Model:"},
-                  function(item, idx) M.model = item end)
+    vim.ui.select(models, {prompt = "Model:"}, function(item, idx)
+        if item ~= nil then
+            print("Model set to " .. item)
+            M.model = item
+        end
+    end)
 end
 
 return M
