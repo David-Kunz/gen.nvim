@@ -86,7 +86,7 @@ Once a conversation is started, the whole context is sent to the LLM. That allow
 
 and once the window is closed, you start with a fresh conversation.
 
-You can select a model from a list all installed models with
+You can select a model from a list of all installed models with
 
 ```lua
 require('gen').select_model()
