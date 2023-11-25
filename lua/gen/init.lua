@@ -97,10 +97,11 @@ function create_window(opts)
 
         M.float_win = vim.api.nvim_open_win(M.result_buffer, true, win_opts)
     else
-        vim.cmd("vnew")
+        vim.cmd("vnew gen.nvim")
         M.result_buffer = vim.fn.bufnr("%")
         M.float_win = vim.fn.win_getid()
         vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
+        vim.api.nvim_buf_set_option(M.result_buffer, "buftype", "nofile")
         vim.api.nvim_win_set_option(M.float_win, "wrap", true)
     end
 end
