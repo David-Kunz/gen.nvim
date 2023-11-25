@@ -37,7 +37,7 @@ Example with Lazy
         show_model = false, -- Displays which model you are using at the beginning of your chat session.
         no_auto_close = false, -- Never closes the window automatically.
         init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
-        -- Function to initialize Ollama (will effectively call `ollama serve`)
+        -- Function to initialize Ollama
         command = "curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body",
         -- The command for thr Ollama service. You can use placeholders $prompt, $model and $body (shellescaped).
         debug = false -- Prints errors and the command which is run.
