@@ -287,7 +287,13 @@ M.exec = function(options)
     })
 
     local group = vim.api.nvim_create_augroup("gen", {clear = true})
-    vim.api.nvim_create_autocmd("BufUnload", {
+    local event
+    if opts.display_mode == 'float' then
+        event = 'WinClosed'
+    else
+        event = 'BufDelete'
+    end
+    vim.api.nvim_create_autocmd(event, {
         buffer = M.result_buffer,
         group = group,
         callback = function()
