@@ -44,6 +44,7 @@ Example with Lazy
         -- This can also be a lua function returning a command string, with options as the input parameter.
         -- The executed command must return a JSON object with { response, context }
         -- (context property is optional).
+        list_models = '<function>' -- Retrieves a list of model names
         debug = false -- Prints errors and the command which is run.
     }
 },
@@ -84,6 +85,12 @@ Once a conversation is started, the whole context is sent to the LLM. That allow
 ```
 
 and once the window is closed, you start with a fresh conversation.
+
+You can select a model from a list all installed models with
+
+```lua
+require('gen').select_model()
+```
 
 ## Custom Prompts
 
