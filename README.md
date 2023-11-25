@@ -49,7 +49,9 @@ Example with Lazy
 },
 ```
 
-Or you can call the `setup` function:
+Here are all [available models](https://ollama.ai/library).
+
+Alternatively, you can call the `setup` function:
 
 ```lua
 require('gen').setup({
@@ -57,7 +59,6 @@ require('gen').setup({
 })
 ```
 
-Here are all [available models](https://ollama.ai/library).
 
 
 ## Usage
