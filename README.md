@@ -39,7 +39,7 @@ Example with Lazy
         init = function(options) pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
         -- Function to initialize Ollama
         command = "curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body",
-        -- The command for thr Ollama service. You can use placeholders $prompt, $model and $body (shellescaped).
+        -- The command for the Ollama service. You can use placeholders $prompt, $model and $body (shellescaped).
         debug = false -- Prints errors and the command which is run.
     }
 },
