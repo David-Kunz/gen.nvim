@@ -42,6 +42,8 @@ Example with Lazy
         command = "curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body",
         -- The command for the Ollama service. You can use placeholders $prompt, $model and $body (shellescaped).
         -- This can also be a lua function returning a command string, with options as the input parameter.
+        -- The executed command must return a JSON object with { response, context }
+        -- (context property is optional).
         debug = false -- Prints errors and the command which is run.
     }
 },
