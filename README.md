@@ -82,7 +82,7 @@ Once a conversation is started, the whole context is sent to the LLM. That allow
 :Gen Chat
 ```
 
-and once the buffer is deleted (for split with `:bd`), you start with a fresh conversation.
+and once the window is closed, you start with a fresh conversation.
 
 ## Custom Prompts
 

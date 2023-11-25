@@ -288,19 +288,12 @@ M.exec = function(options)
 
     local group = vim.api.nvim_create_augroup("gen", {clear = true})
     local event
-    if opts.display_mode == 'float' then
-        event = 'WinClosed'
-    else
-        event = 'BufDelete'
-    end
-    vim.api.nvim_create_autocmd(event, {
+    vim.api.nvim_create_autocmd('WinClosed', {
         buffer = M.result_buffer,
         group = group,
         callback = function()
             if job_id then vim.fn.jobstop(job_id) end
-            if M.float_win ~= nil and vim.api.nvim_win_is_valid(M.float_win) then
-                vim.api.nvim_win_close(M.float_win, true)
-            end
+            if M.result_buffer then vim.api.nvim_buf_delete(M.result_buffer, { force = true }) end
             reset()
         end
     })
