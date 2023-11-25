@@ -19,19 +19,21 @@ local function trim_table(tbl)
     return tbl
 end
 
-M.model = "mistral:instruct"
-M.debugCommand = false
-M.show_prompt = false
-M.show_model = false
-M.command =
-    'curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body'
-M.json_response = true
-M.no_auto_close = false
-M.display_mode = "float"
-M.no_auto_close = false
-M.no_serve = false
+local default_options = {
+    model = "mistral:instruct",
+    debug = false,
+    show_prompt = false,
+    show_model = false,
+    command = 'curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body',
+    json_response = true,
+    no_auto_close = false,
+    display_mode = "float",
+    no_auto_close = false,
+    no_serve = false
+}
+for k, v in pairs(default_options) do M[k] = v end
 
-M.setup = function(opts) M = vim.tbl_deep_extend("force", M, opts) end
+M.setup = function(opts) for k, v in pairs(opts) do M[k] = v end end
 
 local function get_window_options()
     local width = math.floor(vim.o.columns * 0.9) -- 90% of the current editor's width
@@ -211,9 +213,9 @@ M.exec = function(options)
     end
 
     local partial_data = ""
-    -- print(cmd)
+    if opts.debug then print(cmd) end
     local job_id = vim.fn.jobstart(cmd, {
-        -- stderr_buffered = opts.debugCommand,
+        -- stderr_buffered = opts.debug,
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
             if not M.float_win or not vim.api.nvim_win_is_valid(M.float_win) then
@@ -246,16 +248,14 @@ M.exec = function(options)
             end
         end,
         on_stderr = function(_, data, _)
-            if opts.debugCommand then
+            if opts.debug then
                 -- window was closed, so cancel the job
                 if not M.float_win or not vim.api.nvim_win_is_valid(M.float_win) then
                     if job_id then vim.fn.jobstop(job_id) end
                     return
                 end
 
-                if data == nil or #data == 0 then
-                    return
-                end
+                if data == nil or #data == 0 then return end
 
                 M.result_string = M.result_string .. table.concat(data, "\n")
                 local lines = vim.split(M.result_string, "\n")
