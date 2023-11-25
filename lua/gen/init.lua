@@ -20,7 +20,7 @@ local function trim_table(tbl)
 end
 
 local default_options = {
-    model = "mistral:instruct",
+    model = "mistral",
     debug = false,
     show_prompt = false,
     show_model = false,
