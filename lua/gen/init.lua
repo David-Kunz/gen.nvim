@@ -85,7 +85,7 @@ function write_to_buffer(lines)
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
 end
 
-function create_window(opts, job_id)
+function create_window(opts)
     if M.display_mode == "float" then
         if M.result_buffer then
             vim.api.nvim_buf_delete(M.result_buffer, {force = true})
@@ -103,19 +103,6 @@ function create_window(opts, job_id)
         vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
         vim.api.nvim_win_set_option(M.float_win, "wrap", true)
     end
-
-    local group = vim.api.nvim_create_augroup("gen", {clear = true})
-    vim.api.nvim_create_autocmd("BufDelete", {
-        buffer = M.result_buffer,
-        group = group,
-        callback = function()
-            vim.fn.jobstop(job_id)
-            if M.float_win ~= nil and vim.api.nvim_win_is_valid(M.float_win) then
-                vim.api.nvim_win_close(M.float_win, true)
-            end
-            reset()
-        end
-    })
 end
 
 function reset()
@@ -204,16 +191,17 @@ M.exec = function(options)
 
     if M.context ~= nil then write_to_buffer({"", "", "---", ""}) end
 
+    local partial_data = ""
+    if opts.debug then print(cmd) end
+
     if M.result_buffer == nil or M.float_win == nil or
         not vim.api.nvim_win_is_valid(M.float_win) then
-        create_window(opts, job_id)
+        create_window(opts)
         if opts.show_model then
             write_to_buffer({"# Chat with " .. opts.model, ""})
         end
     end
 
-    local partial_data = ""
-    if opts.debug then print(cmd) end
     local job_id = vim.fn.jobstart(cmd, {
         -- stderr_buffered = opts.debug,
         on_stdout = function(_, data, _)
@@ -293,6 +281,21 @@ M.exec = function(options)
             M.result_string = ""
         end
     })
+
+    local group = vim.api.nvim_create_augroup("gen", {clear = true})
+    vim.api.nvim_create_autocmd("BufUnload", {
+        buffer = M.result_buffer,
+        group = group,
+        callback = function()
+            if job_id then vim.fn.jobstop(job_id) end
+            if M.float_win ~= nil and vim.api.nvim_win_is_valid(M.float_win) then
+                vim.api.nvim_win_close(M.float_win, true)
+            end
+            reset()
+        end
+    })
+
+
 
     if opts.show_prompt then
         local lines = vim.split(prompt, "\n")
