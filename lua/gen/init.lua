@@ -173,7 +173,12 @@ M.exec = function(options)
 
     M.result_string = ""
 
-    local cmd = M.command
+    local cmd
+    if type(opts.command) == 'function' then
+        cmd = opts.command(opts)
+    else
+        cmd = M.command
+    end
 
     if string.find(cmd, "%$prompt") then
         local prompt_escaped = vim.fn.shellescape(prompt)
