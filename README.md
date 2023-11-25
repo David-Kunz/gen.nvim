@@ -63,8 +63,7 @@ Use command `Gen` to generate text based on predefined and customizable prompts.
 Example key maps:
 
 ```lua
-vim.keymap.set('v', '<leader>]', ':Gen<CR>')
-vim.keymap.set('n', '<leader>]', ':Gen<CR>')
+vim.keymap.set({ 'n', 'v' }, '<leader>]', ':Gen<CR>')
 ```
 
 You can also directly invoke it with one of the [predefined prompts](./lua/gen/prompts.lua):
