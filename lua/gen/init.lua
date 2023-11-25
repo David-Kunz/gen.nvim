@@ -29,7 +29,18 @@ local default_options = {
     no_auto_close = false,
     display_mode = "float",
     no_auto_close = false,
-    init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end
+    init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
+    list_models = function()
+        local response = vim.fn.systemlist(
+                             "curl --silent --no-buffer http://localhost:11434/api/tags")
+        local list = vim.fn.json_decode(response)
+        local models = {}
+        for key, _ in pairs(list.models) do
+            table.insert(models, list.models[key].name)
+        end
+        table.sort(models)
+        return models
+    end
 }
 for k, v in pairs(default_options) do M[k] = v end
 
@@ -293,7 +304,9 @@ M.exec = function(options)
         group = group,
         callback = function()
             if job_id then vim.fn.jobstop(job_id) end
-            if M.result_buffer then vim.api.nvim_buf_delete(M.result_buffer, { force = true }) end
+            if M.result_buffer then
+                vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+            end
             reset()
         end
     })
@@ -403,6 +416,12 @@ function process_response(str, job_id, json_response)
     local lines = vim.split(text, "\n")
     write_to_buffer(lines)
 
+end
+
+M.select_model = function()
+    local models = M.list_models()
+    vim.ui.select(models, {prompt = "Model:"},
+                  function(item, idx) M.model = item end)
 end
 
 return M
