@@ -72,6 +72,14 @@ You can also directly invoke it with one of the [predefined prompts](./lua/gen/p
 vim.keymap.set('v', '<leader>]', ':Gen Enhance_Grammar_Spelling<CR>')
 ```
 
+Once a conversation is open, the whole context is sent to the LLM. That allows you to ask follow-up questions with
+
+```lua
+:Gen Chat
+```
+
+and once the window is closed, you start with a fresh conversation.
+
 ## Custom Prompts
 
 All prompts are defined in `require('gen').prompts`, you can enhance or modify them.
