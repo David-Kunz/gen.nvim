@@ -11,7 +11,7 @@ Generate text using LLMs with customizable prompts
 
 ## Requires
 
-- [Ollama](https://ollama.ai/) with an appropriate model, e.g. [`mistral:instruct`](https://ollama.ai/library/mistral) or [`zephyr`](https://ollama.ai/library/zephyr) (customizable)
+- [Ollama](https://ollama.ai/) with an appropriate model, e.g. [`mistral`](https://ollama.ai/library/mistral) or [`zephyr`](https://ollama.ai/library/zephyr) (customizable)
 - [Curl](https://curl.se/)
 
 ## Install
@@ -118,4 +118,4 @@ You can use the following properties per prompt:
    - `$register`: Value of the unnamed register (yanked text)
 - `replace`: `true` if the selected text shall be replaced with the generated output
 - `extract`: Regular expression used to extract the generated result
-- `model`: The model to use, e.g. `zephyr`, default: `mistral:instruct`
+- `model`: The model to use, e.g. `zephyr`, default: `mistral`
