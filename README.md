@@ -32,7 +32,7 @@ Example with Lazy
 {
     "David-Kunz/gen.nvim",
     opts = {
-        model = "mistral:instruct", -- The default model to use.
+        model = "mistral", -- The default model to use.
         display_mode = "float", -- The display mode. Can be "float" or "split".
         show_prompt = false, -- Shows the Prompt submitted to Ollama.
         show_model = false, -- Displays which model you are using at the beginning of your chat session.
@@ -44,7 +44,7 @@ Example with Lazy
         -- This can also be a lua function returning a command string, with options as the input parameter.
         -- The executed command must return a JSON object with { response, context }
         -- (context property is optional).
-        list_models = '<function>' -- Retrieves a list of model names
+        list_models = '<function>', -- Retrieves a list of model names
         debug = false -- Prints errors and the command which is run.
     }
 },
