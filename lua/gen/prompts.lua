@@ -2,7 +2,7 @@ return {
     Generate = { prompt = "$input", replace = true },
     Chat = { prompt = "$input" },
     Summarize = { prompt = "Summarize the following text:\n$text" },
-    Ask = { prompt = "Regarding the following text, $input:\n$text" },
+    Ask = { prompt = "$buffers\n\nRegarding the following text, $input:\n$text" },
     Change = {
         prompt = "Change the following text, $input, just output the final text without additional quotes around it:\n$text",
         replace = true,
