@@ -505,9 +505,4 @@ function get_context_from_open_buffers()
     return context
 end
 
-M.kjjuno = function()
-    local context = get_context_from_open_buffers()
-    write_to_buffer(vim.split(context, "\n"))
-end
-
 return M
