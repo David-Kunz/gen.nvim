@@ -288,8 +288,8 @@ M.exec = function(options)
                                           start_pos[3] - 1, end_pos[2] - 1,
                                           end_pos[3] - 1, lines)
                 if not opts.no_auto_close then
-                    vim.api.nvim_win_hide(M.float_win)
-                    vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+                    if M.float_win ~= nil then vim.api.nvim_win_hide(M.float_win) end
+                    if M.result_buffer ~= nil then vim.api.nvim_buf_delete(M.result_buffer, {force = true}) end
                     reset()
                 end
             end
