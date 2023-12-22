@@ -114,6 +114,7 @@ function create_window(opts)
         vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
         vim.api.nvim_buf_set_option(M.result_buffer, "buftype", "nofile")
         vim.api.nvim_win_set_option(M.float_win, "wrap", true)
+        vim.api.nvim_win_set_option(M.float_win, "linebreak", true)
     end
 end
 
