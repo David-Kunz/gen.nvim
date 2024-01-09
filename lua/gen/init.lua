@@ -1,4 +1,5 @@
 local prompts = require("gen.prompts")
+local spinner = require("gen.spinner")
 local M = {}
 
 local curr_buffer = nil
@@ -246,6 +247,8 @@ M.exec = function(options)
                 return
             end
 
+            spinner.show_spinner()
+
             for _, line in ipairs(data) do
                 partial_data = partial_data .. line
                 if line:sub(-1) == "}" then
@@ -267,6 +270,7 @@ M.exec = function(options)
             end
         end,
         on_stderr = function(_, data, _)
+            spinner.hide_spinner()
             if opts.debug then
                 -- window was closed, so cancel the job
                 if not M.float_win or not vim.api.nvim_win_is_valid(M.float_win) then
@@ -286,6 +290,7 @@ M.exec = function(options)
             end
         end,
         on_exit = function(a, b)
+            spinner.hide_spinner()
             if b == 0 and opts.replace and M.result_buffer then
                 local lines = {}
                 if extractor then
@@ -326,7 +331,6 @@ M.exec = function(options)
     })
 
     local group = vim.api.nvim_create_augroup("gen", { clear = true })
-    local event
     vim.api.nvim_create_autocmd("WinClosed", {
         buffer = M.result_buffer,
         group = group,
