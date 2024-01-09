@@ -28,7 +28,6 @@ local default_options = {
     show_model = false,
     command = "curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body",
     json_response = true,
-    no_auto_close = false,
     display_mode = "float",
     no_auto_close = false,
     init = function()
