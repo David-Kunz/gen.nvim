@@ -16,7 +16,8 @@ local spinner = {
 local spinner_index = 1 -- to keep track of the spinner frame
 local spinner_shown = false -- to keep track if spinner is already shown
 local spinner_timer = nil -- timer for updating the spinner
-local interval = 120 -- spinner update interval in ms
+-- NOTE:  This is configured locally rather than as a plugin for simplicity.
+local interval = 300 -- spinner update interval in ms
 
 local function update_spinner()
     local spinner_frame = spinner[spinner_index]
