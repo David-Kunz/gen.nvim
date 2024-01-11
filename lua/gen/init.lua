@@ -232,6 +232,7 @@ M.exec = function(options)
         end
     end
 
+    spinner.show_spinner()
     local job_id = vim.fn.jobstart(cmd, {
         -- stderr_buffered = opts.debug,
         on_stdout = function(_, data, _)
@@ -246,8 +247,6 @@ M.exec = function(options)
                 reset()
                 return
             end
-
-            spinner.show_spinner()
 
             for _, line in ipairs(data) do
                 partial_data = partial_data .. line
@@ -270,7 +269,6 @@ M.exec = function(options)
             end
         end,
         on_stderr = function(_, data, _)
-            spinner.hide_spinner()
             if opts.debug then
                 -- window was closed, so cancel the job
                 if not M.float_win or not vim.api.nvim_win_is_valid(M.float_win) then
