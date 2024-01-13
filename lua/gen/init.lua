@@ -126,11 +126,12 @@ function reset()
 end
 
 M.exec = function(options)
-    local opts = vim.tbl_deep_extend("force", M, options)
-
-    if type(opts.init) == 'function' then opts.init(opts) end
-
-    curr_buffer = vim.fn.bufnr("%")
+    local opts = vim.tbl_deep_extend('force', {
+        model = options.model or M.model,
+        command = M.command
+    }, options)
+    pcall(io.popen, 'ollama serve > /dev/null 2>&1 &')
+    curr_buffer = vim.fn.bufnr('%')
     local mode = opts.mode or vim.fn.mode()
     if mode == "v" or mode == "V" then
         start_pos = vim.fn.getpos("'<")
