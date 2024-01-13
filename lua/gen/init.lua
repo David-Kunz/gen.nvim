@@ -396,13 +396,24 @@ function process_response(str, job_id, json_response)
     local text
 
     if json_response then
+        -- check if str
+        -- llamacpp string -- 'data: {"content": "hello"}' -- we need to remove 'data: ' before json
+        if string.sub(str, 1, 6) == "data: " then
+           str = string.gsub(str, "data: ", "", 1)
+        end
         local success, result = pcall(function()
             return vim.fn.json_decode(str)
         end)
 
         if success then
-            text = result.response
-            if result.context ~= nil then M.context = result.context end
+            if result.content ~= nil then -- llamacpp version
+                text = result.content
+                if result.content ~= nil then M.context = result.content end
+            else -- ollama
+                text = result.response
+                if result.context ~= nil then M.context = result.context end
+            end
+
         else
             write_to_buffer({"", "====== ERROR ====", str, "-------------", ""})
             vim.fn.jobstop(job_id)
