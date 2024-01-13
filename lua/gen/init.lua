@@ -200,6 +200,13 @@ M.exec = function(options)
     if string.find(cmd, "%$body") then
         local body = {model = opts.model, prompt = prompt, stream = true}
         if M.context then body.context = M.context end
+        if M.model_options ~= nil then -- llamacpp servert - model options: eg. temperature, top_k, top_p
+            body = vim.tbl_extend("force", body, M.model_options)
+        end
+        if opts.model_options ~= nil then -- override model options from gen command (if exist)
+            body = vim.tbl_extend("force", body, opts.model_options)
+        end
+
         local json = vim.fn.json_encode(body)
         json = vim.fn.shellescape(json)
         cmd = string.gsub(cmd, "%$body", json)
