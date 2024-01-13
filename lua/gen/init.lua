@@ -397,8 +397,7 @@ function process_response(str, job_id, json_response)
     local text
 
     if json_response then
-        -- check if str
-        -- llamacpp string -- 'data: {"content": "hello"}' -- we need to remove 'data: ' before json
+        -- llamacpp response string -- 'data: {"content": "hello", .... }' -- remove 'data: ' prefix, before json_decode
         if string.sub(str, 1, 6) == "data: " then
            str = string.gsub(str, "data: ", "", 1)
         end
