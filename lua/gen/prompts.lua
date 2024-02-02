@@ -1,6 +1,6 @@
 local M = {}
 
-M.load_default_prompts = function()
+M.default_prompts = function()
 return {
     Generate = { prompt = "$input", replace = true },
     Chat = { prompt = "$input" },
@@ -46,5 +46,11 @@ return {
 }
 end
 
+-- this function is itself almost redundant, but it helps keep the
+-- program syntax in init.lua clearer by accessing both user and default
+-- prompts from the same file.
+M.user_prompts = function(prompts)
+    return prompts
+end
 
 return M

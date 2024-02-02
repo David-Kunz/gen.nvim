@@ -1,6 +1,5 @@
-
-local default_prompts = require("gen.prompts").load_default_prompts()
-local user_prompts = require("gen.prompts")
+local prompts = require("gen.prompts")
+local default_prompts = prompts.default_prompts()
 local M = {}
 
 local curr_buffer = nil
@@ -345,14 +344,17 @@ end
 
 M.win_config = {}
 
-
-
 M.prompts = function()
-    if M.load_default_prompts then
-        return default_prompts
-    else
-        return {}
+    local user_prompts = prompts.user_prompts(M.user_prompts)
+    if not M.load_default_prompts then
+        return user_prompts
     end
+
+    local user_and_default_prompts = user_prompts
+    for k, v in pairs(default_prompts) do
+        user_and_default_prompts[k] = v
+    end
+    return user_and_default_prompts
 end
 
 function select_prompt(cb)
