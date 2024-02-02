@@ -1,4 +1,6 @@
-local prompts = require("gen.prompts")
+
+local default_prompts = require("gen.prompts").load_default_prompts()
+local user_prompts = require("gen.prompts")
 local M = {}
 
 local curr_buffer = nil
@@ -28,7 +30,7 @@ local default_options = {
     json_response = true,
     no_auto_close = false,
     display_mode = "float",
-    no_auto_close = false,
+    load_default_prompts = true,
     init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
     list_models = function()
         local response = vim.fn.systemlist(
@@ -343,10 +345,21 @@ end
 
 M.win_config = {}
 
-M.prompts = prompts
+
+
+M.prompts = function()
+    if M.load_default_prompts then
+        return default_prompts
+    else
+        return {}
+    end
+end
+
 function select_prompt(cb)
     local promptKeys = {}
-    for key, _ in pairs(M.prompts) do table.insert(promptKeys, key) end
+    if M.prompts ~= {} then
+        for key, _ in pairs(M.prompts()) do table.insert(promptKeys, key) end
+    end
     table.sort(promptKeys)
     vim.ui.select(promptKeys, {
         prompt = "Prompt:",

@@ -1,3 +1,6 @@
+local M = {}
+
+M.load_default_prompts = function()
 return {
     Generate = { prompt = "$input", replace = true },
     Chat = { prompt = "$input" },
@@ -41,3 +44,7 @@ return {
         extract = "```$filetype\n(.-)```",
     },
 }
+end
+
+
+return M
