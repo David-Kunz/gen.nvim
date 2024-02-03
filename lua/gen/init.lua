@@ -209,6 +209,7 @@ M.exec = function(options)
 
         local json = vim.fn.json_encode(body)
         json = vim.fn.shellescape(json)
+        if vim.o.shell == 'cmd.exe' then json = string.gsub(json, '\\\"\"', '\\\\\\\"') end
         cmd = string.gsub(cmd, "%$body", json)
     end
 
