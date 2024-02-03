@@ -238,7 +238,9 @@ M.exec = function(options)
                 reset()
                 return
             end
-
+            if opts.debug then
+                vim.print('Response data: ' , data)
+            end
             for _, line in ipairs(data) do
                 partial_data = partial_data .. line
                 if line:sub(-1) == "}" then
@@ -260,7 +262,7 @@ M.exec = function(options)
             end
         end,
         on_stderr = function(_, data, _)
-            if opts.debug then
+            if opts.debug and false then
                 -- window was closed, so cancel the job
                 if not M.float_win or not vim.api.nvim_win_is_valid(M.float_win) then
                     if job_id then vim.fn.jobstop(job_id) end
