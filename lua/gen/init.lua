@@ -344,8 +344,8 @@ end
 
 M.win_config = {}
 
-M.prompts = function()
-    local user_prompts = prompts.user_prompts(M.user_prompts)
+function get_prompts()
+    local user_prompts = prompts.user_prompts(M.user_prompts) or {}
     if not M.load_default_prompts then
         return user_prompts
     end
@@ -357,10 +357,12 @@ M.prompts = function()
     return user_and_default_prompts
 end
 
+local all_prompts = get_prompts()
+
 function select_prompt(cb)
     local promptKeys = {}
     if M.prompts ~= {} then
-        for key, _ in pairs(M.prompts()) do table.insert(promptKeys, key) end
+        for key, _ in pairs(all_prompts) do table.insert(promptKeys, key) end
     end
     table.sort(promptKeys)
     vim.ui.select(promptKeys, {
@@ -379,7 +381,7 @@ vim.api.nvim_create_user_command("Gen", function(arg)
         mode = "v"
     end
     if arg.args ~= "" then
-        local prompt = M.prompts[arg.args]
+        local prompt = all_prompts[arg.args]
         if not prompt then
             print("Invalid prompt '" .. arg.args .. "'")
             return
@@ -389,7 +391,7 @@ vim.api.nvim_create_user_command("Gen", function(arg)
     end
     select_prompt(function(item)
         if not item then return end
-        p = vim.tbl_deep_extend("force", {mode = mode}, M.prompts[item])
+        p = vim.tbl_deep_extend("force", {mode = mode}, all_prompts[item])
         M.exec(p)
     end)
 end, {
@@ -397,7 +399,7 @@ end, {
     nargs = "?",
     complete = function(ArgLead, CmdLine, CursorPos)
         local promptKeys = {}
-        for key, _ in pairs(M.prompts) do
+        for key, _ in pairs(all_prompts) do
             if key:lower():match("^" .. ArgLead:lower()) then
                 table.insert(promptKeys, key)
             end
