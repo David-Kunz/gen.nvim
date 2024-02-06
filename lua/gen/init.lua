@@ -30,6 +30,7 @@ local default_options = {
     no_auto_close = false,
     display_mode = "float",
     load_default_prompts = true,
+    user_prompts = {},
     init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
     list_models = function()
         local response = vim.fn.systemlist(
@@ -128,7 +129,6 @@ end
 
 M.exec = function(options)
     local opts = vim.tbl_deep_extend("force", M, options)
-
     if type(opts.init) == 'function' then opts.init(opts) end
 
     curr_buffer = vim.fn.bufnr("%")
@@ -345,25 +345,22 @@ end
 M.win_config = {}
 
 function get_prompts()
-    local user_prompts = prompts.user_prompts(M.user_prompts) or {}
     if not M.load_default_prompts then
-        return user_prompts
+        return M.user_prompts
     end
 
-    local user_and_default_prompts = user_prompts
-    for k, v in pairs(default_prompts) do
+    local user_and_default_prompts = default_prompts
+    for k, v in pairs(M.user_prompts) do
         user_and_default_prompts[k] = v
     end
     return user_and_default_prompts
 end
 
-local all_prompts = get_prompts()
+M.prompts = get_prompts()
 
 function select_prompt(cb)
     local promptKeys = {}
-    if M.prompts ~= {} then
-        for key, _ in pairs(all_prompts) do table.insert(promptKeys, key) end
-    end
+    for key, _ in pairs(M.prompts) do table.insert(promptKeys, key) end
     table.sort(promptKeys)
     vim.ui.select(promptKeys, {
         prompt = "Prompt:",
@@ -381,7 +378,7 @@ vim.api.nvim_create_user_command("Gen", function(arg)
         mode = "v"
     end
     if arg.args ~= "" then
-        local prompt = all_prompts[arg.args]
+        local prompt = M.prompts[arg.args]
         if not prompt then
             print("Invalid prompt '" .. arg.args .. "'")
             return
@@ -391,7 +388,7 @@ vim.api.nvim_create_user_command("Gen", function(arg)
     end
     select_prompt(function(item)
         if not item then return end
-        p = vim.tbl_deep_extend("force", {mode = mode}, all_prompts[item])
+        p = vim.tbl_deep_extend("force", {mode = mode}, M.prompts[item])
         M.exec(p)
     end)
 end, {
@@ -399,7 +396,7 @@ end, {
     nargs = "?",
     complete = function(ArgLead, CmdLine, CursorPos)
         local promptKeys = {}
-        for key, _ in pairs(all_prompts) do
+        for key, _ in pairs(M.prompts) do
             if key:lower():match("^" .. ArgLead:lower()) then
                 table.insert(promptKeys, key)
             end

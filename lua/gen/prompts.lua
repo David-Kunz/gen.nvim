@@ -46,11 +46,5 @@ return {
 }
 end
 
--- this function is itself almost redundant, but it helps keep the
--- program syntax in init.lua clearer by accessing both user and default
--- prompts from the same file.
-M.user_prompts = function(prompts)
-    return prompts
-end
 
 return M
