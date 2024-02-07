@@ -301,7 +301,6 @@ M.exec = function(options)
     })
 
     local group = vim.api.nvim_create_augroup("gen", {clear = true})
-    local event
     vim.api.nvim_create_autocmd('WinClosed', {
         buffer = M.result_buffer,
         group = group,
