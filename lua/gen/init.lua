@@ -200,7 +200,7 @@ M.exec = function(options)
     if string.find(cmd, "%$body") then
         local body = {model = opts.model, prompt = prompt, stream = true}
         if M.context then body.context = M.context end
-        if M.model_options ~= nil then -- llamacpp servert - model options: eg. temperature, top_k, top_p
+        if M.model_options ~= nil then -- llamacpp server - model options: eg. temperature, top_k, top_p
             body = vim.tbl_extend("force", body, M.model_options)
         end
         if opts.model_options ~= nil then -- override model options from gen command (if exist)
@@ -262,7 +262,7 @@ M.exec = function(options)
             end
         end,
         on_stderr = function(_, data, _)
-            if opts.debug and false then
+            if opts.debug then
                 -- window was closed, so cancel the job
                 if not M.float_win or not vim.api.nvim_win_is_valid(M.float_win) then
                     if job_id then vim.fn.jobstop(job_id) end
