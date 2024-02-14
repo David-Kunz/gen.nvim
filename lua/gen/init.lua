@@ -200,6 +200,13 @@ M.exec = function(options)
     if string.find(cmd, "%$body") then
         local body = {model = opts.model, prompt = prompt, stream = true}
         if M.context then body.context = M.context end
+        if M.model_options ~= nil then -- llamacpp server - model options: eg. temperature, top_k, top_p
+            body = vim.tbl_extend("force", body, M.model_options)
+        end
+        if opts.model_options ~= nil then -- override model options from gen command (if exist)
+            body = vim.tbl_extend("force", body, opts.model_options)
+        end
+
         local json = vim.fn.json_encode(body)
         json = vim.fn.shellescape(json)
         if vim.o.shell == 'cmd.exe' then json = string.gsub(json, '\\\"\"', '\\\\\\\"') end
@@ -231,7 +238,9 @@ M.exec = function(options)
                 reset()
                 return
             end
-
+            if opts.debug then
+                vim.print('Response data: ' , data)
+            end
             for _, line in ipairs(data) do
                 partial_data = partial_data .. line
                 if line:sub(-1) == "}" then
@@ -397,13 +406,23 @@ function process_response(str, job_id, json_response)
     local text
 
     if json_response then
+        -- llamacpp response string -- 'data: {"content": "hello", .... }' -- remove 'data: ' prefix, before json_decode
+        if string.sub(str, 1, 6) == "data: " then
+           str = string.gsub(str, "data: ", "", 1)
+        end
         local success, result = pcall(function()
             return vim.fn.json_decode(str)
         end)
 
         if success then
-            text = result.response
-            if result.context ~= nil then M.context = result.context end
+            if result.content ~= nil then -- llamacpp version
+                text = result.content
+                if result.content ~= nil then M.context = result.content end
+            else -- ollama
+                text = result.response
+                if result.context ~= nil then M.context = result.context end
+            end
+
         else
             write_to_buffer({"", "====== ERROR ====", str, "-------------", ""})
             vim.fn.jobstop(job_id)
