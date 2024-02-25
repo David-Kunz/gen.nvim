@@ -48,7 +48,7 @@ Example with Lazy
         -- This can also be a command string.
         -- The executed command must return a JSON object with { response, context }
         -- (context property is optional).
-        list_models = '<omitted lua function>', -- Retrieves a list of model names
+        -- list_models = '<omitted lua function>', -- Retrieves a list of model names
         debug = false -- Prints errors and the command which is run.
     }
 },
