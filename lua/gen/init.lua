@@ -21,18 +21,21 @@ end
 
 local default_options = {
     model = "mistral",
+    host = "localhost",
+    port = "11434",
     debug = false,
     show_prompt = false,
     show_model = false,
-    command = 'curl --silent --no-buffer -X POST http://localhost:11434/api/generate -d $body',
+    command = function(options)
+        return "curl --silent --no-buffer -X POST http://" .. options.host .. ":" .. options.port .. "/api/generate -d $body"
+    end,
     json_response = true,
-    no_auto_close = false,
     display_mode = "float",
     no_auto_close = false,
     init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
-    list_models = function()
+    list_models = function(options)
         local response = vim.fn.systemlist(
-                             "curl --silent --no-buffer http://localhost:11434/api/tags")
+                             "curl --silent --no-buffer http://" .. options.host .. ":" .. options.port .. "/api/tags")
         local list = vim.fn.json_decode(response)
         local models = {}
         for key, _ in pairs(list.models) do
@@ -440,7 +443,7 @@ function process_response(str, job_id, json_response)
 end
 
 M.select_model = function()
-    local models = M.list_models()
+    local models = M.list_models(M)
     vim.ui.select(models, {prompt = "Model:"}, function(item, idx)
         if item ~= nil then
             print("Model set to " .. item)
