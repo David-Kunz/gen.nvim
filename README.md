@@ -76,7 +76,7 @@ Example key maps:
 vim.keymap.set({ 'n', 'v' }, '<leader>]', ':Gen<CR>')
 ```
 
-You can also directly invoke it with one of the [predefined prompts](./lua/gen/prompts.lua):
+You can also directly invoke it with one of the [predefined prompts](./lua/gen/prompts.lua) or your custom prompts:
 
 ```lua
 vim.keymap.set('v', '<leader>]', ':Gen Enhance_Grammar_Spelling<CR>')
