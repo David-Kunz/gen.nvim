@@ -27,21 +27,15 @@ local default_options = {
     show_prompt = false,
     show_model = false,
     command = function(options)
-        return "curl --silent --no-buffer -X POST http://"
-            .. options.host
-            .. ":"
-            .. options.port
-            .. "/api/chat -d $body"
+        return "curl --silent --no-buffer -X POST http://" .. options.host .. ":" .. options.port .. "/api/chat -d $body"
     end,
     json_response = true,
     display_mode = "float",
     no_auto_close = false,
-    init = function()
-        pcall(io.popen, "ollama serve > /dev/null 2>&1 &")
-    end,
+    init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
     list_models = function(options)
-        local response =
-            vim.fn.systemlist("curl --silent --no-buffer http://" .. options.host .. ":" .. options.port .. "/api/tags")
+        local response = vim.fn.systemlist(
+                             "curl --silent --no-buffer http://" .. options.host .. ":" .. options.port .. "/api/tags")
         local list = vim.fn.json_decode(response)
         local models = {}
         for key, _ in pairs(list.models) do
@@ -208,17 +202,13 @@ M.exec = function(options)
     cmd = string.gsub(cmd, "%$model", opts.model)
     if string.find(cmd, "%$body") then
         local body = { model = opts.model, stream = true }
-
         local messages = {}
-
         if M.context then
             messages = M.context
         end
-
         -- Add new prompt to the context
         table.insert(messages, { role = "user", content = prompt })
         body.messages = messages
-
         if M.model_options ~= nil then -- llamacpp server - model options: eg. temperature, top_k, top_p
             body = vim.tbl_extend("force", body, M.model_options)
         end
@@ -296,17 +286,16 @@ M.exec = function(options)
             end
         end,
         on_exit = function(a, b)
+            print("result_string: ", vim.inspect(M.result_string))
             if b == 0 and opts.replace and M.result_buffer then
                 local lines = {}
-                print("result_string: ", vim.inspect(M.result_string))
                 if extractor then
                     local extracted = M.result_string:match(extractor)
                     if not extracted then
                         if not opts.no_auto_close then
                             vim.api.nvim_win_hide(M.float_win)
-                            if M.result_buffer then
-                                vim.api.nvim_buf_delete(M.result_buffer, { force = true })
-                            end
+                            vim.api.nvim_buf_delete(M.result_buffer,
+                                                    {force = true})
                             reset()
                         end
                         return
@@ -319,11 +308,11 @@ M.exec = function(options)
                 lines = trim_table(lines)
                 print("lines: ", vim.inspect(lines))
                 vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
-                    start_pos[3] - 1, end_pos[2] - 1,
-                    end_pos[3] - 1, lines)
+                                          start_pos[3] - 1, end_pos[2] - 1,
+                                          end_pos[3] - 1, lines)
                 if not opts.no_auto_close then
                     if M.float_win ~= nil then vim.api.nvim_win_hide(M.float_win) end
-                    if M.result_buffer ~= nil then vim.api.nvim_buf_delete(M.result_buffer, { force = true }) end
+                    if M.result_buffer ~= nil then vim.api.nvim_buf_delete(M.result_buffer, {force = true}) end
                     reset()
                 end
             end
@@ -421,58 +410,50 @@ end, {
         end
         table.sort(promptKeys)
         return promptKeys
-    end,
+    end
 })
 
 function process_response(str, job_id, json_response)
-    if string.len(str) == 0 then
-        return
-    end
+    if string.len(str) == 0 then return end
     local text
 
     if json_response then
         -- llamacpp response string -- 'data: {"content": "hello", .... }' -- remove 'data: ' prefix, before json_decode
         if string.sub(str, 1, 6) == "data: " then
-            str = string.gsub(str, "data: ", "", 1)
+           str = string.gsub(str, "data: ", "", 1)
         end
         local success, result = pcall(function()
             return vim.fn.json_decode(str)
         end)
 
         if success then
-            print("result: ", vim.inspect(result))
             if result.content ~= nil then -- llamacpp version
                 text = result.content
-                if result.content ~= nil then
-                    M.context = result.content
-                end
+                if result.content ~= nil then M.context = result.content end
             else -- ollama
-                text = result.message.content
-                if not M.context then
-                    M.context = {} -- Create a new table if it doesn't exist
-                end
-                table.insert(M.context, result.message.content)
+                text = result.response
+                if result.context ~= nil then M.context = result.context end
             end
+
         else
-            write_to_buffer({ "", "====== ERROR ====", str, "-------------", "" })
+            write_to_buffer({"", "====== ERROR ====", str, "-------------", ""})
             vim.fn.jobstop(job_id)
         end
     else
         text = str
     end
 
-    if text == nil then
-        return
-    end
+    if text == nil then return end
 
     M.result_string = M.result_string .. text
     local lines = vim.split(text, "\n")
     write_to_buffer(lines)
+
 end
 
 M.select_model = function()
     local models = M.list_models(M)
-    vim.ui.select(models, { prompt = "Model:" }, function(item, idx)
+    vim.ui.select(models, {prompt = "Model:"}, function(item, idx)
         if item ~= nil then
             print("Model set to " .. item)
             M.model = item
