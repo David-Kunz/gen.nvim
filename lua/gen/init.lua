@@ -298,6 +298,7 @@ M.exec = function(options)
         on_exit = function(a, b)
             if b == 0 and opts.replace and M.result_buffer then
                 local lines = {}
+                print("result_string: ", vim.inspect(M.result_string))
                 if extractor then
                     local extracted = M.result_string:match(extractor)
                     if not extracted then
@@ -310,17 +311,19 @@ M.exec = function(options)
                         end
                         return
                     end
+                    print("extracted: ", vim.inspect(extracted))
                     lines = vim.split(extracted, "\n", true)
                 else
                     lines = vim.split(M.result_string, "\n", true)
                 end
                 lines = trim_table(lines)
+                print("lines: ", vim.inspect(lines))
                 vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
-                                          start_pos[3] - 1, end_pos[2] - 1,
-                                          end_pos[3] - 1, lines)
+                    start_pos[3] - 1, end_pos[2] - 1,
+                    end_pos[3] - 1, lines)
                 if not opts.no_auto_close then
                     if M.float_win ~= nil then vim.api.nvim_win_hide(M.float_win) end
-                    if M.result_buffer ~= nil then vim.api.nvim_buf_delete(M.result_buffer, {force = true}) end
+                    if M.result_buffer ~= nil then vim.api.nvim_buf_delete(M.result_buffer, { force = true }) end
                     reset()
                 end
             end
@@ -445,12 +448,10 @@ function process_response(str, job_id, json_response)
                 end
             else -- ollama
                 text = result.message.content
-                if result.message.content ~= nil then
-                    if not M.context then
-                        M.context = {} -- Create a new table if it doesn't exist
-                    end
-                    table.insert(M.context, result.message.content)
+                if not M.context then
+                    M.context = {} -- Create a new table if it doesn't exist
                 end
+                table.insert(M.context, result.message.content)
             end
         else
             write_to_buffer({ "", "====== ERROR ====", str, "-------------", "" })
