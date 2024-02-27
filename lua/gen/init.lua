@@ -286,7 +286,6 @@ M.exec = function(options)
             end
         end,
         on_exit = function(a, b)
-            print("result_string: ", vim.inspect(M.result_string))
             if b == 0 and opts.replace and M.result_buffer then
                 local lines = {}
                 if extractor then
@@ -300,13 +299,11 @@ M.exec = function(options)
                         end
                         return
                     end
-                    print("extracted: ", vim.inspect(extracted))
                     lines = vim.split(extracted, "\n", true)
                 else
                     lines = vim.split(M.result_string, "\n", true)
                 end
                 lines = trim_table(lines)
-                print("lines: ", vim.inspect(lines))
                 vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
                                           start_pos[3] - 1, end_pos[2] - 1,
                                           end_pos[3] - 1, lines)
@@ -431,8 +428,11 @@ function process_response(str, job_id, json_response)
                 text = result.content
                 if result.content ~= nil then M.context = result.content end
             else -- ollama
-                text = result.response
-                if result.context ~= nil then M.context = result.context end
+                text = result.message.content
+                if not M.context then
+                    M.context = {} -- Create a new table if it doesn't exist
+                end
+                table.insert(M.context, result.message.content)
             end
 
         else
