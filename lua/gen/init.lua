@@ -179,6 +179,9 @@ M.exec = function(options)
 
     if type(prompt) == "function" then
         prompt = prompt({content = content, filetype = vim.bo.filetype})
+        if type(prompt) ~= 'string' or string.len(prompt) == 0 then
+            return
+        end
     end
 
     prompt = substitute_placeholders(prompt)
