@@ -27,7 +27,7 @@ local default_options = {
     show_prompt = false,
     show_model = false,
     command = function(options)
-        return "curl --silent --no-buffer -X POST http://" .. options.host .. ":" .. options.port .. "/api/generate -d $body"
+        return "curl --silent --no-buffer -X POST http://" .. options.host .. ":" .. options.port .. "/api/chat -d $body"
     end,
     json_response = true,
     display_mode = "float",
@@ -204,8 +204,14 @@ M.exec = function(options)
     end
     cmd = string.gsub(cmd, "%$model", opts.model)
     if string.find(cmd, "%$body") then
-        local body = {model = opts.model, prompt = prompt, stream = true}
-        if M.context then body.context = M.context end
+        local body = { model = opts.model, stream = true }
+        local messages = {}
+        if M.context then
+            messages = M.context
+        end
+        -- Add new prompt to the context
+        table.insert(messages, { role = "user", content = prompt })
+        body.messages = messages
         if M.model_options ~= nil then -- llamacpp server - model options: eg. temperature, top_k, top_p
             body = vim.tbl_extend("force", body, M.model_options)
         end
@@ -425,8 +431,11 @@ function process_response(str, job_id, json_response)
                 text = result.content
                 if result.content ~= nil then M.context = result.content end
             else -- ollama
-                text = result.response
-                if result.context ~= nil then M.context = result.context end
+                text = result.message.content
+                if not M.context then
+                    M.context = {} -- Create a new table if it doesn't exist
+                end
+                table.insert(M.context, result.message.content)
             end
 
         else
