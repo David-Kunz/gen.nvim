@@ -428,7 +428,7 @@ function process_response(str, job_id, json_response)
         end)
 
         if success then
-            if result.message and result.message.content then
+            if result.message and result.message.content then -- ollama chat endpoint
                 local content = result.message.content
                 text = content
 
