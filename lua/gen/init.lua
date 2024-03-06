@@ -126,6 +126,7 @@ function reset()
     M.float_win = nil
     M.result_string = ""
     M.context = nil
+    M.context_buffer = nil
 end
 
 M.exec = function(options)
@@ -428,11 +429,19 @@ function process_response(str, job_id, json_response)
 
         if success then
             if result.message and result.message.content then -- ollama chat endpoint
-                text = result.message.content
-                if not M.context then
-                    M.context = {}
+                local content = result.message.content
+                text = content
+
+                M.context = M.context or {}
+                M.context_buffer = M.context_buffer or ""
+                M.context_buffer = M.context_buffer .. content
+
+                -- When the message sequence is complete, add it to the context
+                if result.done then
+                    table.insert(M.context, {role = "assistant", content = M.context_buffer})
+                    -- Clear the buffer as we're done with this sequence of messages
+                    M.context_buffer = ""
                 end
-                table.insert(M.context, result.message.content)
             elseif result.content then -- llamacpp version
                 text = result.content
                 if result.content then M.context = result.content end
