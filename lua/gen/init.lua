@@ -28,6 +28,15 @@ local default_options = {
     debug = false,
     show_prompt = false,
     show_model = false,
+    --- Create the curl prompt that will be included in the substutute of $body
+    ---
+    ---@param prompt string user input and optionally the highlighted code
+    ---@return table
+    preprocess_body = function(prompt)
+        local messages = {}
+        table.insert(messages, { role = "user", content = prompt })
+        return { messages = messages }
+    end,
     command = function(options)
         return "curl --silent --no-buffer -X POST http://"
             .. options.host
@@ -220,13 +229,13 @@ M.exec = function(options)
     cmd = string.gsub(cmd, "%$model", opts.model)
     if string.find(cmd, "%$body") then
         local body = { model = opts.model, stream = true }
-        local messages = {}
         if M.context then
-            messages = M.context
+            body.context = M.context
         end
-        -- Add new prompt to the context
-        table.insert(messages, { role = "user", content = prompt })
-        body.messages = messages
+
+        local payload = M.preprocess_body(prompt)
+        body = vim.tbl_extend("force", body, payload)
+
         if M.model_options ~= nil then -- llamacpp server - model options: eg. temperature, top_k, top_p
             body = vim.tbl_extend("force", body, M.model_options)
         end
