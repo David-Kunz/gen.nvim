@@ -43,8 +43,15 @@ local default_options = {
         end
         table.sort(models)
         return models
-    end
+    end,
+    reprompt = {
+        enabled = true,
+        clear = false,
+        focus_on_new = true,
+        map = "<c-r>",
+    }
 }
+M.reprompt_count = 0
 for k, v in pairs(default_options) do M[k] = v end
 
 M.setup = function(opts) for k, v in pairs(opts) do M[k] = v end end
@@ -97,6 +104,7 @@ function write_to_buffer(lines)
     vim.api.nvim_buf_set_text(M.result_buffer, last_row - 1, last_col,
                               last_row - 1, last_col, vim.split(text, "\n"))
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
+    return last_row
 end
 
 function create_window(opts)
@@ -127,6 +135,7 @@ function reset()
     M.result_string = ""
     M.context = nil
     M.context_buffer = nil
+    M.reprompt_count = 0
 end
 
 M.exec = function(options)
@@ -323,16 +332,18 @@ M.exec = function(options)
 
     local group = vim.api.nvim_create_augroup("gen", {clear = true})
     local event
+
+    local close = function()
+        if job_id then vim.fn.jobstop(job_id) end
+        if M.result_buffer then
+            vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+        end
+        reset()
+    end
     vim.api.nvim_create_autocmd('WinClosed', {
         buffer = M.result_buffer,
         group = group,
-        callback = function()
-            if job_id then vim.fn.jobstop(job_id) end
-            if M.result_buffer then
-                vim.api.nvim_buf_delete(M.result_buffer, {force = true})
-            end
-            reset()
-        end
+        callback = close
     })
 
     if opts.show_prompt then
@@ -350,17 +361,42 @@ M.exec = function(options)
         end
         local heading = "#"
         if M.show_model then heading = "##" end
-        write_to_buffer({
-            heading .. " Prompt:", "", table.concat(short_prompt, "\n"), "",
+        if M.reprompt.enabled then
+            heading = string.format("%s Prompt #%d:", heading, M.reprompt_count)
+        else
+            heading = string.format("%s Prompt:", heading)
+        end
+        local last_prompt_line = write_to_buffer({
+            heading, "", table.concat(short_prompt, "\n"), "",
             "---", ""
         })
+        if M.reprompt.focus_on_new then
+            vim.api.nvim_win_set_cursor(M.float_win, {last_prompt_line, 0})
+        end
     end
 
     vim.keymap.set("n", "<esc>", function() vim.fn.jobstop(job_id) end,
                    {buffer = M.result_buffer})
 
     vim.api.nvim_buf_attach(M.result_buffer, false,
-                            {on_detach = function() M.result_buffer = nil end})
+                            {
+                                on_detach = function()
+                                    M.reprompt_count = 0
+                                    M.result_buffer = nil
+                                end
+                            })
+
+    if M.reprompt.enabled and M.reprompt_count == 0 then
+        vim.keymap.set("n", M.reprompt.map, function()
+            M.reprompt_count = M.reprompt_count + 1
+            if M.reprompt.clear then
+                close()
+            end
+            M.exec({ prompt = prompt })
+        end, {
+            buffer = M.result_buffer,
+        })
+    end
 end
 
 M.win_config = {}
