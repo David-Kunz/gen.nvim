@@ -370,7 +370,7 @@ M.exec = function(options)
             heading, "", table.concat(short_prompt, "\n"), "",
             "---", ""
         })
-        if M.reprompt.focus_on_new then
+        if M.reprompt.enabled and M.reprompt.focus_on_new then
             vim.api.nvim_win_set_cursor(M.float_win, {last_prompt_line, 0})
         end
     end

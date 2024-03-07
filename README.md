@@ -49,7 +49,13 @@ Example with Lazy
         -- The executed command must return a JSON object with { response, context }
         -- (context property is optional).
         -- list_models = '<omitted lua function>', -- Retrieves a list of model names
-        debug = false -- Prints errors and the command which is run.
+        debug = false, -- Prints errors and the command which is run.
+        reprompt = {
+            enabled = true, -- allow retry prompt
+            clear = false, -- clear buffer on retry
+            focus_on_new = true, -- focus on new prompt
+            map = "<c-r>", -- keymap for retry
+        }
     }
 },
 ```
