@@ -134,7 +134,7 @@ M.exec = function(options)
 
     if type(opts.init) == 'function' then opts.init(opts) end
 
-    curr_buffer = vim.fn.bufnr("%")
+    curr_buffer = vim.fn.winbufnr(0)
     local mode = opts.mode or vim.fn.mode()
     if mode == "v" or mode == "V" then
         start_pos = vim.fn.getpos("'<")
