@@ -8,7 +8,6 @@ Generate text using LLMs with customizable prompts
 
 [![Local LLMs in Neovim: gen.nvim](https://user-images.githubusercontent.com/1009936/273126287-7b5f2b40-c678-47c5-8f21-edf9516f6034.jpg)](https://youtu.be/FIZt7MinpMY?si=KChSuJJDyrcTdYiM)
 
-
 ## Requires
 
 - [Ollama](https://ollama.ai/) with an appropriate model, e.g. [`mistral`](https://ollama.ai/library/mistral) or [`zephyr`](https://ollama.ai/library/zephyr) (customizable)
@@ -40,6 +39,15 @@ Example with Lazy
         show_model = false, -- Displays which model you are using at the beginning of your chat session.
         no_auto_close = false, -- Never closes the window automatically.
         init = function(options) pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
+        --- Create the curl prompt that will be included in the substutute of $body
+        ---
+        ---@param prompt string user input and optionally the highlighted code
+        ---@return table will be send via curl to ollama
+        preprocess_body = function(prompt)
+            local messages = {}
+            table.insert(messages, { role = "user", content = prompt })
+            return { messages = messages }
+        end,
         -- Function to initialize Ollama
         command = function(options)
             return "curl --silent --no-buffer -X POST http://" .. options.host .. ":" .. options.port .. "/api/chat -d $body"
@@ -63,8 +71,6 @@ require('gen').setup({
   -- same as above
 })
 ```
-
-
 
 ## Usage
 
@@ -101,7 +107,8 @@ require('gen').select_model()
 All prompts are defined in `require('gen').prompts`, you can enhance or modify them.
 
 Example:
-```lua
+
+````lua
 require('gen').prompts['Elaborate_Text'] = {
   prompt = "Elaborate the following text:\n$text",
   replace = true
@@ -111,15 +118,15 @@ require('gen').prompts['Fix_Code'] = {
   replace = true,
   extract = "```$filetype\n(.-)```"
 }
-```
+````
 
 You can use the following properties per prompt:
 
 - `prompt`: (string | function) Prompt either as a string or a function which should return a string. The result can use the following placeholders:
-   - `$text`: Visually selected text
-   - `$filetype`: File type of the buffer (e.g. `javascript`)
-   - `$input`: Additional user input
-   - `$register`: Value of the unnamed register (yanked text)
+  - `$text`: Visually selected text
+  - `$filetype`: File type of the buffer (e.g. `javascript`)
+  - `$input`: Additional user input
+  - `$register`: Value of the unnamed register (yanked text)
 - `replace`: `true` if the selected text shall be replaced with the generated output
 - `extract`: Regular expression used to extract the generated result
 - `model`: The model to use, e.g. `zephyr`, default: `mistral`
