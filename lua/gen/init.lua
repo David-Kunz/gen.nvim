@@ -26,6 +26,7 @@ local default_options = {
     debug = false,
     show_prompt = false,
     show_model = false,
+    quit_map = "q",
     command = function(options)
         return "curl --silent --no-buffer -X POST http://" .. options.host .. ":" .. options.port .. "/api/chat -d $body"
     end,
@@ -76,7 +77,7 @@ local function get_window_options()
         row = new_win_row,
         col = 0,
         style = "minimal",
-        border = "single"
+        border = "rounded"
     }
 end
 
@@ -119,6 +120,7 @@ function create_window(opts)
         vim.api.nvim_win_set_option(M.float_win, "wrap", true)
         vim.api.nvim_win_set_option(M.float_win, "linebreak", true)
     end
+    vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>", { buffer = M.result_buffer })
 end
 
 function reset()
