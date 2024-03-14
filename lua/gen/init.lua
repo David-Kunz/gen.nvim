@@ -152,7 +152,7 @@ M.exec = function(options)
                                                            start_pos[2] - 1,
                                                            start_pos[3] - 1,
                                                            end_pos[2] - 1,
-                                                           end_pos[3] - 1, {}),
+                                                           end_pos[3], {}),
                                  "\n")
 
     local function substitute_placeholders(input)
@@ -312,7 +312,7 @@ M.exec = function(options)
                 lines = trim_table(lines)
                 vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
                                           start_pos[3] - 1, end_pos[2] - 1,
-                                          end_pos[3] - 1, lines)
+                                          end_pos[3], lines)
                 if not opts.no_auto_close then
                     if M.float_win ~= nil then vim.api.nvim_win_hide(M.float_win) end
                     if M.result_buffer ~= nil then vim.api.nvim_buf_delete(M.result_buffer, {force = true}) end
