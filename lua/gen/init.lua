@@ -35,7 +35,7 @@ local default_options = {
     json_response = true,
     display_mode = "float",
     no_auto_close = false,
-    init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
+    init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1") end,
     list_models = function(options)
         local response = vim.fn.systemlist(
                              "curl --silent --no-buffer http://" .. options.host ..
