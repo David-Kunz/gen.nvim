@@ -153,9 +153,7 @@ M.exec = function(options)
         start_pos = vim.fn.getpos("'<")
         end_pos = vim.fn.getpos("'>")
         end_pos[3] = vim.fn.col("'>") -- in case of `V`, it would be maxcol instead
-        if mode == "v" then
-          end_pos[3] = end_pos[3] - 1
-        end
+        if mode == "v" then end_pos[3] = end_pos[3] - 1 end
     else
         local cursor = vim.fn.getpos(".")
         start_pos = cursor
