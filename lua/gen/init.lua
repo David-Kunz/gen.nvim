@@ -27,8 +27,10 @@ local default_options = {
     show_prompt = false,
     show_model = false,
     quit_map = "q",
+    retry_map = "r",
     command = function(options)
-        return "curl --silent --no-buffer -X POST http://" .. options.host .. ":" .. options.port .. "/api/chat -d $body"
+        return "curl --silent --no-buffer -X POST http://" .. options.host ..
+                   ":" .. options.port .. "/api/chat -d $body"
     end,
     json_response = true,
     display_mode = "float",
@@ -36,7 +38,8 @@ local default_options = {
     init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
     list_models = function(options)
         local response = vim.fn.systemlist(
-                             "curl --silent --no-buffer http://" .. options.host .. ":" .. options.port .. "/api/tags")
+                             "curl --silent --no-buffer http://" .. options.host ..
+                                 ":" .. options.port .. "/api/tags")
         local list = vim.fn.json_decode(response)
         local models = {}
         for key, _ in pairs(list.models) do
@@ -104,7 +107,7 @@ function write_to_buffer(lines)
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
 end
 
-function create_window(opts)
+function create_window(cmd, opts)
     if M.display_mode == "float" then
         if M.result_buffer then
             vim.api.nvim_buf_delete(M.result_buffer, {force = true})
@@ -124,7 +127,11 @@ function create_window(opts)
         vim.api.nvim_win_set_option(M.float_win, "wrap", true)
         vim.api.nvim_win_set_option(M.float_win, "linebreak", true)
     end
-    vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>", { buffer = M.result_buffer })
+    vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>", {buffer = M.result_buffer})
+    vim.keymap.set("n", M.retry_map, function()
+        vim.api.nvim_win_close(0, true)
+        M.run_command(cmd, opts) end,
+                   {buffer = M.result_buffer})
 end
 
 function reset()
@@ -156,8 +163,7 @@ M.exec = function(options)
                                                            start_pos[2] - 1,
                                                            start_pos[3] - 1,
                                                            end_pos[2] - 1,
-                                                           end_pos[3], {}),
-                                 "\n")
+                                                           end_pos[3], {}), "\n")
 
     local function substitute_placeholders(input)
         if not input then return end
@@ -211,13 +217,11 @@ M.exec = function(options)
     end
     cmd = string.gsub(cmd, "%$model", opts.model)
     if string.find(cmd, "%$body") then
-        local body = { model = opts.model, stream = true }
+        local body = {model = opts.model, stream = true}
         local messages = {}
-        if M.context then
-            messages = M.context
-        end
+        if M.context then messages = M.context end
         -- Add new prompt to the context
-        table.insert(messages, { role = "user", content = prompt })
+        table.insert(messages, {role = "user", content = prompt})
         body.messages = messages
         if M.model_options ~= nil then -- llamacpp server - model options: eg. temperature, top_k, top_p
             body = vim.tbl_extend("force", body, M.model_options)
@@ -228,22 +232,28 @@ M.exec = function(options)
 
         local json = vim.fn.json_encode(body)
         json = vim.fn.shellescape(json)
-        if vim.o.shell == 'cmd.exe' then json = string.gsub(json, '\\\"\"', '\\\\\\\"') end
+        if vim.o.shell == 'cmd.exe' then
+            json = string.gsub(json, '\\\"\"', '\\\\\\\"')
+        end
         cmd = string.gsub(cmd, "%$body", json)
     end
 
     if M.context ~= nil then write_to_buffer({"", "", "---", ""}) end
 
-    local partial_data = ""
-    if opts.debug then print(cmd) end
+    M.run_command(cmd, opts)
 
+end
+
+M.run_command = function(cmd, opts)
     if M.result_buffer == nil or M.float_win == nil or
         not vim.api.nvim_win_is_valid(M.float_win) then
-        create_window(opts)
+        create_window(cmd, opts)
         if opts.show_model then
             write_to_buffer({"# Chat with " .. opts.model, ""})
         end
     end
+    local partial_data = ""
+    if opts.debug then print(cmd) end
 
     local job_id = vim.fn.jobstart(cmd, {
         -- stderr_buffered = opts.debug,
@@ -257,9 +267,7 @@ M.exec = function(options)
                 reset()
                 return
             end
-            if opts.debug then
-                vim.print('Response data: ' , data)
-            end
+            if opts.debug then vim.print('Response data: ', data) end
             for _, line in ipairs(data) do
                 partial_data = partial_data .. line
                 if line:sub(-1) == "}" then
@@ -318,8 +326,12 @@ M.exec = function(options)
                                           start_pos[3] - 1, end_pos[2] - 1,
                                           end_pos[3], lines)
                 if not opts.no_auto_close then
-                    if M.float_win ~= nil then vim.api.nvim_win_hide(M.float_win) end
-                    if M.result_buffer ~= nil then vim.api.nvim_buf_delete(M.result_buffer, {force = true}) end
+                    if M.float_win ~= nil then
+                        vim.api.nvim_win_hide(M.float_win)
+                    end
+                    if M.result_buffer ~= nil then
+                        vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+                    end
                     reset()
                 end
             end
@@ -427,7 +439,7 @@ function process_response(str, job_id, json_response)
     if json_response then
         -- llamacpp response string -- 'data: {"content": "hello", .... }' -- remove 'data: ' prefix, before json_decode
         if string.sub(str, 1, 6) == "data: " then
-           str = string.gsub(str, "data: ", "", 1)
+            str = string.gsub(str, "data: ", "", 1)
         end
         local success, result = pcall(function()
             return vim.fn.json_decode(str)
@@ -444,7 +456,10 @@ function process_response(str, job_id, json_response)
 
                 -- When the message sequence is complete, add it to the context
                 if result.done then
-                    table.insert(M.context, {role = "assistant", content = M.context_buffer})
+                    table.insert(M.context, {
+                        role = "assistant",
+                        content = M.context_buffer
+                    })
                     -- Clear the buffer as we're done with this sequence of messages
                     M.context_buffer = ""
                 end
