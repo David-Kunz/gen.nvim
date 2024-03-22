@@ -39,7 +39,7 @@ Example with Lazy
         show_prompt = false, -- Shows the Prompt submitted to Ollama.
         show_model = false, -- Displays which model you are using at the beginning of your chat session.
         quit_map = "q", -- set keymap for quit
-        retry_map = "q", -- set keymap for retry
+        retry_map = "<c-r>", -- set keymap for retry
         no_auto_close = false, -- Never closes the window automatically.
         init = function(options) pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
         -- Function to initialize Ollama

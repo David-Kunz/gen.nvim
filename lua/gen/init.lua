@@ -27,7 +27,7 @@ local default_options = {
     show_prompt = false,
     show_model = false,
     quit_map = "q",
-    retry_map = "r",
+    retry_map = "<c-r>",
     command = function(options)
         return "curl --silent --no-buffer -X POST http://" .. options.host ..
                    ":" .. options.port .. "/api/chat -d $body"
