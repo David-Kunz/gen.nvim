@@ -332,7 +332,7 @@ M.run_command = function(cmd, opts)
                 lines = trim_table(lines)
                 vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
                                           start_pos[3] - 1, end_pos[2] - 1,
-                                          end_pos[3], lines)
+                                          end_pos[3] - 1, lines)
                 if not opts.no_auto_close then
                     if M.float_win ~= nil then
                         vim.api.nvim_win_hide(M.float_win)
