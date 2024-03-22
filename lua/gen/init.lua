@@ -97,6 +97,10 @@ function write_to_buffer(lines)
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", true)
     vim.api.nvim_buf_set_text(M.result_buffer, last_row - 1, last_col,
                               last_row - 1, last_col, vim.split(text, "\n"))
+    -- Move the cursor to the end of the new lines
+    local new_last_row = last_row + #lines - 1
+    vim.api.nvim_win_set_cursor(M.float_win, {new_last_row, 0})
+
     vim.api.nvim_buf_set_option(M.result_buffer, "modifiable", false)
 end
 
