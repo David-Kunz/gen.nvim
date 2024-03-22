@@ -152,7 +152,8 @@ M.exec = function(options)
     if mode == "v" or mode == "V" then
         start_pos = vim.fn.getpos("'<")
         end_pos = vim.fn.getpos("'>")
-        end_pos[3] = vim.fn.col("'>") -- in case of `V`, it would be maxcol instead
+        local max_col = vim.api.nvim_win_get_width(0)
+        if end_pos[3] > max_col then end_pos[3] = vim.fn.col("'>") - 1 end -- in case of `V`, it would be maxcol instead
     else
         local cursor = vim.fn.getpos(".")
         start_pos = cursor
@@ -163,7 +164,7 @@ M.exec = function(options)
                                                            start_pos[2] - 1,
                                                            start_pos[3] - 1,
                                                            end_pos[2] - 1,
-                                                           end_pos[3] - 1, {}), "\n")
+                                                           end_pos[3], {}), "\n")
 
     local function substitute_placeholders(input)
         if not input then return end
@@ -332,7 +333,7 @@ M.run_command = function(cmd, opts)
                 lines = trim_table(lines)
                 vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
                                           start_pos[3] - 1, end_pos[2] - 1,
-                                          end_pos[3] - 1, lines)
+                                          end_pos[3], lines)
                 if not opts.no_auto_close then
                     if M.float_win ~= nil then
                         vim.api.nvim_win_hide(M.float_win)
