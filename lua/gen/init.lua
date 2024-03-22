@@ -130,8 +130,8 @@ function create_window(cmd, opts)
     vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>", {buffer = M.result_buffer})
     vim.keymap.set("n", M.retry_map, function()
         vim.api.nvim_win_close(0, true)
-        M.run_command(cmd, opts) end,
-                   {buffer = M.result_buffer})
+        M.run_command(cmd, opts)
+    end, {buffer = M.result_buffer})
 end
 
 function reset()
@@ -205,6 +205,18 @@ M.exec = function(options)
     M.result_string = ""
 
     local cmd
+
+    opts.json = function(body)
+        local json = vim.fn.json_encode(body)
+        json = vim.fn.shellescape(json)
+        if vim.o.shell == 'cmd.exe' then
+            json = string.gsub(json, '\\\"\"', '\\\\\\\"')
+        end
+        return json
+    end
+
+    opts.prompt = prompt
+
     if type(opts.command) == 'function' then
         cmd = opts.command(opts)
     else
@@ -230,11 +242,7 @@ M.exec = function(options)
             body = vim.tbl_extend("force", body, opts.model_options)
         end
 
-        local json = vim.fn.json_encode(body)
-        json = vim.fn.shellescape(json)
-        if vim.o.shell == 'cmd.exe' then
-            json = string.gsub(json, '\\\"\"', '\\\\\\\"')
-        end
+        local json = opts.json(body)
         cmd = string.gsub(cmd, "%$body", json)
     end
 
