@@ -153,6 +153,9 @@ M.exec = function(options)
         start_pos = vim.fn.getpos("'<")
         end_pos = vim.fn.getpos("'>")
         end_pos[3] = vim.fn.col("'>") -- in case of `V`, it would be maxcol instead
+        if mode == "v" then
+          end_pos[3] = end_pos[3] - 1
+        end
     else
         local cursor = vim.fn.getpos(".")
         start_pos = cursor
@@ -332,7 +335,7 @@ M.run_command = function(cmd, opts)
                 lines = trim_table(lines)
                 vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
                                           start_pos[3] - 1, end_pos[2] - 1,
-                                          end_pos[3] - 1, lines)
+                                          end_pos[3], lines)
                 if not opts.no_auto_close then
                     if M.float_win ~= nil then
                         vim.api.nvim_win_hide(M.float_win)
