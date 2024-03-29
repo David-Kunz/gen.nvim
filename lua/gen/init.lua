@@ -199,8 +199,7 @@ M.exec = function(options)
     end
 
     prompt = substitute_placeholders(prompt)
-    local extractor = substitute_placeholders(opts.extract)
-
+    opts.extract = substitute_placeholders(opts.extract)
     prompt = string.gsub(prompt, "%%", "%%%%")
 
     M.result_string = ""
@@ -315,8 +314,8 @@ M.run_command = function(cmd, opts)
         on_exit = function(a, b)
             if b == 0 and opts.replace and M.result_buffer then
                 local lines = {}
-                if extractor then
-                    local extracted = M.result_string:match(extractor)
+                if opts.extract then
+                    local extracted = M.result_string:match(opts.extract)
                     if not extracted then
                         if not opts.no_auto_close then
                             vim.api.nvim_win_hide(M.float_win)
