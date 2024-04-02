@@ -362,7 +362,7 @@ M.run_command = function(cmd, opts)
     })
 
     if opts.show_prompt then
-        local lines = vim.split(prompt, "\n")
+        local lines = vim.split(opts.prompt, "\n")
         local short_prompt = {}
         for i = 1, #lines do
             lines[i] = "> " .. lines[i]
