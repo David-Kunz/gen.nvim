@@ -24,6 +24,7 @@ local default_options = {
     host = "localhost",
     port = "11434",
     debug = false,
+    body = { stream = true },
     show_prompt = false,
     show_model = false,
     quit_map = "q",
@@ -229,7 +230,7 @@ M.exec = function(options)
     end
     cmd = string.gsub(cmd, "%$model", opts.model)
     if string.find(cmd, "%$body") then
-        local body = {model = opts.model, stream = true}
+        local body = vim.tbl_extend("force", {model = opts.model, stream = true}, opts.body)
         local messages = {}
         if M.context then messages = M.context end
         -- Add new prompt to the context
@@ -454,7 +455,27 @@ function process_response(str, job_id, json_response)
         end)
 
         if success then
-            if result.message and result.message.content then -- ollama chat endpoint
+            if result.choices then -- groq chat endpoint
+                local choice = result.choices[1]
+                local content = choice.delta.content
+                text = content
+
+                if content ~= nil then
+                    M.context = M.context or {}
+                    M.context_buffer = M.context_buffer or ""
+                    M.context_buffer = M.context_buffer .. content
+                end
+
+                -- When the message sequence is complete, add it to the context
+                if choice.finish_reason == "stop" then
+                    table.insert(M.context, {
+                        role = "assistant",
+                        content = M.context_buffer
+                    })
+                    -- Clear the buffer as we're done with this sequence of messages
+                    M.context_buffer = ""
+                end
+            elseif result.message and result.message.content then -- ollama chat endpoint
                 local content = result.message.content
                 text = content
 
@@ -491,7 +512,6 @@ function process_response(str, job_id, json_response)
     M.result_string = M.result_string .. text
     local lines = vim.split(text, "\n")
     write_to_buffer(lines)
-
 end
 
 M.select_model = function()
