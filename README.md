@@ -11,7 +11,7 @@ Generate text using LLMs with customizable prompts
 
 ## Requires
 
-- [Ollama](https://ollama.ai/) with an appropriate model, e.g. [`mistral`](https://ollama.ai/library/mistral) or [`zephyr`](https://ollama.ai/library/zephyr) (customizable)
+- [Ollama](https://ollama.ai/) with an appropriate model, e.g. [`llama3`](https://ollama.com/library/llama3), [`mistral`](https://ollama.ai/library/mistral) or [`zephyr`](https://ollama.ai/library/zephyr) (customizable)
 - [Curl](https://curl.se/)
 
 ## Install
