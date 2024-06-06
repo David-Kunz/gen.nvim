@@ -109,6 +109,14 @@ function write_to_buffer(lines)
 end
 
 function create_window(cmd, opts)
+    function setup_split()
+        M.result_buffer = vim.fn.bufnr("%")
+        M.float_win = vim.fn.win_getid()
+        vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
+        vim.api.nvim_buf_set_option(M.result_buffer, "buftype", "nofile")
+        vim.api.nvim_win_set_option(M.float_win, "wrap", true)
+        vim.api.nvim_win_set_option(M.float_win, "linebreak", true)
+    end
     if M.display_mode == "float" then
         if M.result_buffer then
             vim.api.nvim_buf_delete(M.result_buffer, {force = true})
@@ -119,14 +127,12 @@ function create_window(cmd, opts)
         vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
 
         M.float_win = vim.api.nvim_open_win(M.result_buffer, true, win_opts)
+    elseif M.display_mode == "horizontal-split" then
+        vim.cmd("split gen.nvim")
+        setup_split()
     else
         vim.cmd("vnew gen.nvim")
-        M.result_buffer = vim.fn.bufnr("%")
-        M.float_win = vim.fn.win_getid()
-        vim.api.nvim_buf_set_option(M.result_buffer, "filetype", "markdown")
-        vim.api.nvim_buf_set_option(M.result_buffer, "buftype", "nofile")
-        vim.api.nvim_win_set_option(M.float_win, "wrap", true)
-        vim.api.nvim_win_set_option(M.float_win, "linebreak", true)
+        setup_split()
     end
     vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>", {buffer = M.result_buffer})
     vim.keymap.set("n", M.retry_map, function()
