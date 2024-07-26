@@ -169,7 +169,7 @@ M.exec = function(options)
                                                            end_pos[3], {}), "\n")
 
     local function substitute_placeholders(input)
-        if not input then return "" end
+        if not input then return input end
         local text = input
         if string.find(text, "%$input") then
             local answer = vim.fn.input("Prompt: ")
