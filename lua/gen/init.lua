@@ -83,6 +83,9 @@ local function close_window(buffer, opts)
     vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1, start_pos[3] - 1,
                               end_pos[2] - 1, end_pos[3] > start_pos[3] and
                                   end_pos[3] or end_pos[3] - 1, lines)
+    -- in case another replacement happens
+    end_pos[2] = start_pos[2] + #lines - 1
+    end_pos[3] = string.len(lines[#lines])
     if not opts.no_auto_close then
         if M.float_win ~= nil then vim.api.nvim_win_hide(M.float_win) end
         if M.result_buffer ~= nil then
