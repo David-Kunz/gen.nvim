@@ -28,6 +28,7 @@ local default_options = {
     show_prompt = false,
     show_model = false,
     quit_map = "q",
+    accept_map = "<c-cr>",
     retry_map = "<c-r>",
     command = function(options)
         return "curl --silent --no-buffer -X POST http://" .. options.host ..
@@ -53,6 +54,43 @@ local default_options = {
 for k, v in pairs(default_options) do M[k] = v end
 
 M.setup = function(opts) for k, v in pairs(opts) do M[k] = v end end
+
+local function reset()
+    M.result_buffer = nil
+    M.float_win = nil
+    M.result_string = ""
+    M.context = nil
+    M.context_buffer = nil
+end
+
+local function close_window(buffer, opts)
+    local lines = {}
+    if opts.extract then
+        local extracted = M.result_string:match(opts.extract)
+        if not extracted then
+            if not opts.no_auto_close then
+                vim.api.nvim_win_hide(M.float_win)
+                vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+                reset()
+            end
+            return
+        end
+        lines = vim.split(extracted, "\n", {trimempty = true})
+    else
+        lines = vim.split(M.result_string, "\n", {trimempty = true})
+    end
+    lines = trim_table(lines)
+    vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1, start_pos[3] - 1,
+                              end_pos[2] - 1, end_pos[3] > start_pos[3] and
+                                  end_pos[3] or end_pos[3] - 1, lines)
+    if not opts.no_auto_close then
+        if M.float_win ~= nil then vim.api.nvim_win_hide(M.float_win) end
+        if M.result_buffer ~= nil then
+            vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+        end
+        reset()
+    end
+end
 
 local function get_window_options()
     local cursor = vim.api.nvim_win_get_cursor(0)
@@ -107,8 +145,10 @@ local function create_window(cmd, opts)
     local function setup_split()
         M.result_buffer = vim.fn.bufnr("%")
         M.float_win = vim.fn.win_getid()
-        vim.api.nvim_set_option_value("filetype", "markdown", {buf = M.result_buffer})
-        vim.api.nvim_set_option_value("buftype", "nofile", {buf = M.result_buffer})
+        vim.api.nvim_set_option_value("filetype", "markdown",
+                                      {buf = M.result_buffer})
+        vim.api.nvim_set_option_value("buftype", "nofile",
+                                      {buf = M.result_buffer})
         vim.api.nvim_set_option_value("wrap", true, {win = M.float_win})
         vim.api.nvim_set_option_value("linebreak", true, {win = M.float_win})
     end
@@ -119,7 +159,8 @@ local function create_window(cmd, opts)
         local win_opts = vim.tbl_deep_extend("force", get_window_options(),
                                              opts.win_config)
         M.result_buffer = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_set_option_value("filetype", "markdown", {buf = M.result_buffer})
+        vim.api.nvim_set_option_value("filetype", "markdown",
+                                      {buf = M.result_buffer})
 
         M.float_win = vim.api.nvim_open_win(M.result_buffer, true, win_opts)
     elseif M.display_mode == "horizontal-split" then
@@ -130,18 +171,14 @@ local function create_window(cmd, opts)
         setup_split()
     end
     vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>", {buffer = M.result_buffer})
+    vim.keymap.set("n", M.accept_map, function()
+        opts.replace = true
+        close_window(0, opts)
+    end, {buffer = M.result_buffer})
     vim.keymap.set("n", M.retry_map, function()
         vim.api.nvim_win_close(0, true)
         M.run_command(cmd, opts)
     end, {buffer = M.result_buffer})
-end
-
-local function reset()
-    M.result_buffer = nil
-    M.float_win = nil
-    M.result_string = ""
-    M.context = nil
-    M.context_buffer = nil
 end
 
 M.exec = function(options)
@@ -149,17 +186,21 @@ M.exec = function(options)
 
     if type(opts.init) == 'function' then opts.init(opts) end
 
-    curr_buffer = vim.fn.winbufnr(0)
-    local mode = opts.mode or vim.fn.mode()
-    if mode == "v" or mode == "V" then
-        start_pos = vim.fn.getpos("'<")
-        end_pos = vim.fn.getpos("'>")
-        local max_col = vim.api.nvim_win_get_width(0)
-        if end_pos[3] > max_col then end_pos[3] = vim.fn.col("'>") - 1 end -- in case of `V`, it would be maxcol instead
-    else
-        local cursor = vim.fn.getpos(".")
-        start_pos = cursor
-        end_pos = start_pos
+    if M.result_buffer ~= vim.fn.winbufnr(0) then
+        curr_buffer = vim.fn.winbufnr(0)
+        local mode = opts.mode or vim.fn.mode()
+        if mode == "v" or mode == "V" then
+            start_pos = vim.fn.getpos("'<")
+            end_pos = vim.fn.getpos("'>")
+            local max_col = vim.api.nvim_win_get_width(0)
+            if end_pos[3] > max_col then
+                end_pos[3] = vim.fn.col("'>") - 1
+            end -- in case of `V`, it would be maxcol instead
+        else
+            local cursor = vim.fn.getpos(".")
+            start_pos = cursor
+            end_pos = start_pos
+        end
     end
 
     local content = table.concat(vim.api.nvim_buf_get_text(curr_buffer,
@@ -317,39 +358,8 @@ M.run_command = function(cmd, opts)
         end,
         on_exit = function(_, b)
             if b == 0 and opts.replace and M.result_buffer then
-                local lines = {}
-                if opts.extract then
-                    local extracted = M.result_string:match(opts.extract)
-                    if not extracted then
-                        if not opts.no_auto_close then
-                            vim.api.nvim_win_hide(M.float_win)
-                            vim.api.nvim_buf_delete(M.result_buffer,
-                                                    {force = true})
-                            reset()
-                        end
-                        return
-                    end
-                    lines = vim.split(extracted, "\n", {trimempty = true})
-                else
-                    lines = vim.split(M.result_string, "\n", {trimempty = true})
-                end
-                lines = trim_table(lines)
-                vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1,
-                                          start_pos[3] - 1, end_pos[2] - 1,
-                                          end_pos[3] > start_pos[3] and
-                                              end_pos[3] or end_pos[3] - 1,
-                                          lines)
-                if not opts.no_auto_close then
-                    if M.float_win ~= nil then
-                        vim.api.nvim_win_hide(M.float_win)
-                    end
-                    if M.result_buffer ~= nil then
-                        vim.api.nvim_buf_delete(M.result_buffer, {force = true})
-                    end
-                    reset()
-                end
+                close_window(b, opts)
             end
-            M.result_string = ""
         end
     })
 
