@@ -220,16 +220,22 @@ M.exec = function(options)
         end
     end
 
-    local content = table.concat(vim.api.nvim_buf_get_text(globals.curr_buffer,
-                                                           globals.start_pos[2] -
-                                                               1,
-                                                           globals.start_pos[3] -
-                                                               1,
-                                                           globals.end_pos[2] -
-                                                               1,
-                                                           globals.end_pos[3],
-                                                           {}), "\n")
+    local content
+    if globals.start_pos == globals.end_pos then
+        -- get text from whole buffer
+        content = table.concat(vim.api.nvim_buf_get_lines(globals.curr_buffer,
+                                                          0, -1, false), "\n")
+    else
+        content = table.concat(vim.api.nvim_buf_get_text(globals.curr_buffer,
+                                                         globals.start_pos[2] -
+                                                             1,
+                                                         globals.start_pos[3] -
+                                                             1,
+                                                         globals.end_pos[2] - 1,
+                                                         globals.end_pos[3], {}),
+                               "\n")
 
+    end
     local function substitute_placeholders(input)
         if not input then return input end
         local text = input
