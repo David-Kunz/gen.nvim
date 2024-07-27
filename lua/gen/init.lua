@@ -2,10 +2,12 @@ local prompts = require("gen.prompts")
 local M = {}
 
 local globals = {}
-local function reset()
-    globals.curr_buffer = nil
-    globals.start_pos = nil
-    globals.end_pos = nil
+local function reset(keep_selection)
+    if not keep_selection then
+        globals.curr_buffer = nil
+        globals.start_pos = nil
+        globals.end_pos = nil
+    end
     globals.result_buffer = nil
     globals.float_win = nil
     globals.result_string = ""
@@ -395,7 +397,7 @@ M.run_command = function(cmd, opts)
             if globals.result_buffer then
                 vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
             end
-            reset()
+            reset(true) -- keep selection in case of subsequent retries
         end
     })
 
