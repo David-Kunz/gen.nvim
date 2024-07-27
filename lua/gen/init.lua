@@ -182,6 +182,8 @@ local function create_window(cmd, opts)
         vim.cmd("vnew gen.nvim")
         setup_split()
     end
+    vim.keymap.set("n", "<esc>", function() vim.fn.jobstop(Job_id) end,
+                   {buffer = globals.result_buffer})
     vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>",
                    {buffer = globals.result_buffer})
     vim.keymap.set("n", M.accept_map, function()
@@ -418,9 +420,6 @@ M.run_command = function(cmd, opts)
         })
     end
 
-    vim.keymap.set("n", "<esc>", function() vim.fn.jobstop(Job_id) end,
-                   {buffer = globals.result_buffer})
-
     vim.api.nvim_buf_attach(globals.result_buffer, false, {
         on_detach = function() globals.result_buffer = nil end
     })
@@ -448,6 +447,7 @@ vim.api.nvim_create_user_command("Gen", function(arg)
     else
         mode = "v"
     end
+    vim.print(arg.args)
     if arg.args ~= "" then
         local prompt = M.prompts[arg.args]
         if not prompt then
