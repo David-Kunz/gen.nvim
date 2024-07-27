@@ -449,7 +449,6 @@ vim.api.nvim_create_user_command("Gen", function(arg)
     else
         mode = "v"
     end
-    vim.print(arg.args)
     if arg.args ~= "" then
         local prompt = M.prompts[arg.args]
         if not prompt then
