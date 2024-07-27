@@ -41,6 +41,7 @@ local default_options = {
     quit_map = "q",
     accept_map = "<c-cr>",
     retry_map = "<c-r>",
+    hidden = false,
     command = function(options)
         return "curl --silent --no-buffer -X POST http://" .. options.host ..
                    ":" .. options.port .. "/api/chat -d $body"
@@ -102,7 +103,7 @@ local function close_window(buffer, opts)
     end
 end
 
-local function get_window_options()
+local function get_window_options(opts)
     local cursor = vim.api.nvim_win_get_cursor(0)
     local new_win_width = vim.api.nvim_win_get_width(0)
     local win_height = vim.api.nvim_win_get_height(0)
@@ -118,6 +119,7 @@ local function get_window_options()
     end
 
     return {
+        hide = opts.hidden,
         relative = "cursor",
         width = new_win_width,
         height = new_win_height,
@@ -169,7 +171,7 @@ local function create_window(cmd, opts)
         if globals.result_buffer then
             vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
         end
-        local win_opts = vim.tbl_deep_extend("force", get_window_options(),
+        local win_opts = vim.tbl_deep_extend("force", get_window_options(opts),
                                              opts.win_config)
         globals.result_buffer = vim.api.nvim_create_buf(false, true)
         vim.api.nvim_set_option_value("filetype", "markdown",
@@ -200,6 +202,11 @@ end
 
 M.exec = function(options)
     local opts = vim.tbl_deep_extend("force", M, options)
+    if opts.hidden then
+        -- the only reasonable thing to do if no output can be seen
+        opts.display_mode = 'float' -- uses the `hide` option
+        opts.replace = true
+    end
 
     if type(opts.init) == 'function' then opts.init(opts) end
 
