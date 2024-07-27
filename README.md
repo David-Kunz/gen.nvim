@@ -94,6 +94,8 @@ Once a conversation is started, the whole context is sent to the LLM. That allow
 
 and once the window is closed, you start with a fresh conversation.
 
+For prompts which don't automatically replace the previously selected text (`replace = false`), you can replace the selected text with the generated output with `<c-cr>`.
+
 You can select a model from a list of all installed models with
 
 ```lua
