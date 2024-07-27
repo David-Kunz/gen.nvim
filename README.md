@@ -105,7 +105,7 @@ require('gen').select_model()
 
 ## Custom Prompts
 
-All prompts are defined in `require('gen').prompts`, you can enhance or modify them.
+[All prompts](./lua/gen/prompts.lua) are defined in `require('gen').prompts`, you can enhance or modify them.
 
 Example:
 ```lua
