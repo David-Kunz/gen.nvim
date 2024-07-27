@@ -1,9 +1,18 @@
 local prompts = require("gen.prompts")
 local M = {}
 
-local curr_buffer = nil
-local start_pos = nil
-local end_pos = nil
+local globals = {}
+local function reset()
+    globals.curr_buffer = nil
+    globals.start_pos = nil
+    globals.end_pos = nil
+    globals.result_buffer = nil
+    globals.float_win = nil
+    globals.result_string = ""
+    globals.context = nil
+    globals.context_buffer = nil
+end
+reset()
 
 local function trim_table(tbl)
     local function is_whitespace(str) return str:match("^%s*$") ~= nil end
@@ -55,41 +64,37 @@ for k, v in pairs(default_options) do M[k] = v end
 
 M.setup = function(opts) for k, v in pairs(opts) do M[k] = v end end
 
-local function reset()
-    M.result_buffer = nil
-    M.float_win = nil
-    M.result_string = ""
-    M.context = nil
-    M.context_buffer = nil
-end
-
 local function close_window(buffer, opts)
     local lines = {}
     if opts.extract then
-        local extracted = M.result_string:match(opts.extract)
+        local extracted = globals.result_string:match(opts.extract)
         if not extracted then
             if not opts.no_auto_close then
-                vim.api.nvim_win_hide(M.float_win)
-                vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+                vim.api.nvim_win_hide(globals.float_win)
+                vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
                 reset()
             end
             return
         end
         lines = vim.split(extracted, "\n", {trimempty = true})
     else
-        lines = vim.split(M.result_string, "\n", {trimempty = true})
+        lines = vim.split(globals.result_string, "\n", {trimempty = true})
     end
     lines = trim_table(lines)
-    vim.api.nvim_buf_set_text(curr_buffer, start_pos[2] - 1, start_pos[3] - 1,
-                              end_pos[2] - 1, end_pos[3] > start_pos[3] and
-                                  end_pos[3] or end_pos[3] - 1, lines)
+    vim.api.nvim_buf_set_text(globals.curr_buffer, globals.start_pos[2] - 1,
+                              globals.start_pos[3] - 1, globals.end_pos[2] - 1,
+                              globals.end_pos[3] > globals.start_pos[3] and
+                                  globals.end_pos[3] or globals.end_pos[3] - 1,
+                              lines)
     -- in case another replacement happens
-    end_pos[2] = start_pos[2] + #lines - 1
-    end_pos[3] = string.len(lines[#lines])
+    globals.end_pos[2] = globals.start_pos[2] + #lines - 1
+    globals.end_pos[3] = string.len(lines[#lines])
     if not opts.no_auto_close then
-        if M.float_win ~= nil then vim.api.nvim_win_hide(M.float_win) end
-        if M.result_buffer ~= nil then
-            vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+        if globals.float_win ~= nil then
+            vim.api.nvim_win_hide(globals.float_win)
+        end
+        if globals.result_buffer ~= nil then
+            vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
         end
         reset()
     end
@@ -122,11 +127,11 @@ local function get_window_options()
 end
 
 local function write_to_buffer(lines)
-    if not M.result_buffer or not vim.api.nvim_buf_is_valid(M.result_buffer) then
-        return
-    end
+    if not globals.result_buffer or
+        not vim.api.nvim_buf_is_valid(globals.result_buffer) then return end
 
-    local all_lines = vim.api.nvim_buf_get_lines(M.result_buffer, 0, -1, false)
+    local all_lines = vim.api.nvim_buf_get_lines(globals.result_buffer, 0, -1,
+                                                 false)
 
     local last_row = #all_lines
     local last_row_content = all_lines[last_row]
@@ -134,38 +139,42 @@ local function write_to_buffer(lines)
 
     local text = table.concat(lines or {}, "\n")
 
-    vim.api.nvim_set_option_value("modifiable", true, {buf = M.result_buffer})
-    vim.api.nvim_buf_set_text(M.result_buffer, last_row - 1, last_col,
+    vim.api.nvim_set_option_value("modifiable", true,
+                                  {buf = globals.result_buffer})
+    vim.api.nvim_buf_set_text(globals.result_buffer, last_row - 1, last_col,
                               last_row - 1, last_col, vim.split(text, "\n"))
     -- Move the cursor to the end of the new lines
     local new_last_row = last_row + #lines - 1
-    vim.api.nvim_win_set_cursor(M.float_win, {new_last_row, 0})
+    vim.api.nvim_win_set_cursor(globals.float_win, {new_last_row, 0})
 
-    vim.api.nvim_set_option_value("modifiable", false, {buf = M.result_buffer})
+    vim.api.nvim_set_option_value("modifiable", false,
+                                  {buf = globals.result_buffer})
 end
 
 local function create_window(cmd, opts)
     local function setup_split()
-        M.result_buffer = vim.fn.bufnr("%")
-        M.float_win = vim.fn.win_getid()
+        globals.result_buffer = vim.fn.bufnr("%")
+        globals.float_win = vim.fn.win_getid()
         vim.api.nvim_set_option_value("filetype", "markdown",
-                                      {buf = M.result_buffer})
+                                      {buf = globals.result_buffer})
         vim.api.nvim_set_option_value("buftype", "nofile",
-                                      {buf = M.result_buffer})
-        vim.api.nvim_set_option_value("wrap", true, {win = M.float_win})
-        vim.api.nvim_set_option_value("linebreak", true, {win = M.float_win})
+                                      {buf = globals.result_buffer})
+        vim.api.nvim_set_option_value("wrap", true, {win = globals.float_win})
+        vim.api.nvim_set_option_value("linebreak", true,
+                                      {win = globals.float_win})
     end
     if M.display_mode == "float" then
-        if M.result_buffer then
-            vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+        if globals.result_buffer then
+            vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
         end
         local win_opts = vim.tbl_deep_extend("force", get_window_options(),
                                              opts.win_config)
-        M.result_buffer = vim.api.nvim_create_buf(false, true)
+        globals.result_buffer = vim.api.nvim_create_buf(false, true)
         vim.api.nvim_set_option_value("filetype", "markdown",
-                                      {buf = M.result_buffer})
+                                      {buf = globals.result_buffer})
 
-        M.float_win = vim.api.nvim_open_win(M.result_buffer, true, win_opts)
+        globals.float_win = vim.api.nvim_open_win(globals.result_buffer, true,
+                                                  win_opts)
     elseif M.display_mode == "horizontal-split" then
         vim.cmd("split gen.nvim")
         setup_split()
@@ -173,15 +182,16 @@ local function create_window(cmd, opts)
         vim.cmd("vnew gen.nvim")
         setup_split()
     end
-    vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>", {buffer = M.result_buffer})
+    vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>",
+                   {buffer = globals.result_buffer})
     vim.keymap.set("n", M.accept_map, function()
         opts.replace = true
         close_window(0, opts)
-    end, {buffer = M.result_buffer})
+    end, {buffer = globals.result_buffer})
     vim.keymap.set("n", M.retry_map, function()
         vim.api.nvim_win_close(0, true)
         M.run_command(cmd, opts)
-    end, {buffer = M.result_buffer})
+    end, {buffer = globals.result_buffer})
 end
 
 M.exec = function(options)
@@ -189,28 +199,32 @@ M.exec = function(options)
 
     if type(opts.init) == 'function' then opts.init(opts) end
 
-    if M.result_buffer ~= vim.fn.winbufnr(0) then
-        curr_buffer = vim.fn.winbufnr(0)
+    if globals.result_buffer ~= vim.fn.winbufnr(0) then
+        globals.curr_buffer = vim.fn.winbufnr(0)
         local mode = opts.mode or vim.fn.mode()
         if mode == "v" or mode == "V" then
-            start_pos = vim.fn.getpos("'<")
-            end_pos = vim.fn.getpos("'>")
+            globals.start_pos = vim.fn.getpos("'<")
+            globals.end_pos = vim.fn.getpos("'>")
             local max_col = vim.api.nvim_win_get_width(0)
-            if end_pos[3] > max_col then
-                end_pos[3] = vim.fn.col("'>") - 1
+            if globals.end_pos[3] > max_col then
+                globals.end_pos[3] = vim.fn.col("'>") - 1
             end -- in case of `V`, it would be maxcol instead
         else
             local cursor = vim.fn.getpos(".")
-            start_pos = cursor
-            end_pos = start_pos
+            globals.start_pos = cursor
+            globals.end_pos = globals.start_pos
         end
     end
 
-    local content = table.concat(vim.api.nvim_buf_get_text(curr_buffer,
-                                                           start_pos[2] - 1,
-                                                           start_pos[3] - 1,
-                                                           end_pos[2] - 1,
-                                                           end_pos[3], {}), "\n")
+    local content = table.concat(vim.api.nvim_buf_get_text(globals.curr_buffer,
+                                                           globals.start_pos[2] -
+                                                               1,
+                                                           globals.start_pos[3] -
+                                                               1,
+                                                           globals.end_pos[2] -
+                                                               1,
+                                                           globals.end_pos[3],
+                                                           {}), "\n")
 
     local function substitute_placeholders(input)
         if not input then return input end
@@ -248,7 +262,7 @@ M.exec = function(options)
     opts.extract = substitute_placeholders(opts.extract)
     prompt = string.gsub(prompt, "%%", "%%%%")
 
-    M.result_string = ""
+    globals.result_string = ""
 
     local cmd
 
@@ -279,7 +293,7 @@ M.exec = function(options)
                                     {model = opts.model, stream = true},
                                     opts.body)
         local messages = {}
-        if M.context then messages = M.context end
+        if globals.context then messages = globals.context end
         -- Add new prompt to the context
         table.insert(messages, {role = "user", content = prompt})
         body.messages = messages
@@ -294,15 +308,15 @@ M.exec = function(options)
         cmd = string.gsub(cmd, "%$body", json)
     end
 
-    if M.context ~= nil then write_to_buffer({"", "", "---", ""}) end
+    if globals.context ~= nil then write_to_buffer({"", "", "---", ""}) end
 
     M.run_command(cmd, opts)
 
 end
 
 M.run_command = function(cmd, opts)
-    if M.result_buffer == nil or M.float_win == nil or
-        not vim.api.nvim_win_is_valid(M.float_win) then
+    if globals.result_buffer == nil or globals.float_win == nil or
+        not vim.api.nvim_win_is_valid(globals.float_win) then
         create_window(cmd, opts)
         if opts.show_model then
             write_to_buffer({"# Chat with " .. opts.model, ""})
@@ -315,10 +329,12 @@ M.run_command = function(cmd, opts)
         -- stderr_buffered = opts.debug,
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
-            if not M.float_win or not vim.api.nvim_win_is_valid(M.float_win) then
+            if not globals.float_win or
+                not vim.api.nvim_win_is_valid(globals.float_win) then
                 if Job_id then vim.fn.jobstop(Job_id) end
-                if M.result_buffer then
-                    vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+                if globals.result_buffer then
+                    vim.api.nvim_buf_delete(globals.result_buffer,
+                                            {force = true})
                 end
                 reset()
                 return
@@ -347,20 +363,22 @@ M.run_command = function(cmd, opts)
         on_stderr = function(_, data, _)
             if opts.debug then
                 -- window was closed, so cancel the job
-                if not M.float_win or not vim.api.nvim_win_is_valid(M.float_win) then
+                if not globals.float_win or
+                    not vim.api.nvim_win_is_valid(globals.float_win) then
                     if Job_id then vim.fn.jobstop(Job_id) end
                     return
                 end
 
                 if data == nil or #data == 0 then return end
 
-                M.result_string = M.result_string .. table.concat(data, "\n")
-                local lines = vim.split(M.result_string, "\n")
+                globals.result_string = globals.result_string ..
+                                            table.concat(data, "\n")
+                local lines = vim.split(globals.result_string, "\n")
                 write_to_buffer(lines)
             end
         end,
         on_exit = function(_, b)
-            if b == 0 and opts.replace and M.result_buffer then
+            if b == 0 and opts.replace and globals.result_buffer then
                 close_window(b, opts)
             end
         end
@@ -368,12 +386,12 @@ M.run_command = function(cmd, opts)
 
     local group = vim.api.nvim_create_augroup("gen", {clear = true})
     vim.api.nvim_create_autocmd('WinClosed', {
-        buffer = M.result_buffer,
+        buffer = globals.result_buffer,
         group = group,
         callback = function()
             if Job_id then vim.fn.jobstop(Job_id) end
-            if M.result_buffer then
-                vim.api.nvim_buf_delete(M.result_buffer, {force = true})
+            if globals.result_buffer then
+                vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
             end
             reset()
         end
@@ -401,10 +419,11 @@ M.run_command = function(cmd, opts)
     end
 
     vim.keymap.set("n", "<esc>", function() vim.fn.jobstop(Job_id) end,
-                   {buffer = M.result_buffer})
+                   {buffer = globals.result_buffer})
 
-    vim.api.nvim_buf_attach(M.result_buffer, false,
-                            {on_detach = function() M.result_buffer = nil end})
+    vim.api.nvim_buf_attach(globals.result_buffer, false, {
+        on_detach = function() globals.result_buffer = nil end
+    })
 end
 
 M.win_config = {}
@@ -476,18 +495,18 @@ function Process_response(str, job_id, json_response)
                 local content = result.message.content
                 text = content
 
-                M.context = M.context or {}
-                M.context_buffer = M.context_buffer or ""
-                M.context_buffer = M.context_buffer .. content
+                globals.context = globals.context or {}
+                globals.context_buffer = globals.context_buffer or ""
+                globals.context_buffer = globals.context_buffer .. content
 
                 -- When the message sequence is complete, add it to the context
                 if result.done then
-                    table.insert(M.context, {
+                    table.insert(globals.context, {
                         role = "assistant",
-                        content = M.context_buffer
+                        content = globals.context_buffer
                     })
                     -- Clear the buffer as we're done with this sequence of messages
-                    M.context_buffer = ""
+                    globals.context_buffer = ""
                 end
             elseif result.choices then -- groq chat endpoint
                 local choice = result.choices[1]
@@ -495,26 +514,30 @@ function Process_response(str, job_id, json_response)
                 text = content
 
                 if content ~= nil then
-                    M.context = M.context or {}
-                    M.context_buffer = M.context_buffer or ""
-                    M.context_buffer = M.context_buffer .. content
+                    globals.context = globals.context or {}
+                    globals.context_buffer = globals.context_buffer or ""
+                    globals.context_buffer = globals.context_buffer .. content
                 end
 
                 -- When the message sequence is complete, add it to the context
                 if choice.finish_reason == "stop" then
-                    table.insert(M.context, {
+                    table.insert(globals.context, {
                         role = "assistant",
-                        content = M.context_buffer
+                        content = globals.context_buffer
                     })
                     -- Clear the buffer as we're done with this sequence of messages
-                    M.context_buffer = ""
+                    globals.context_buffer = ""
                 end
             elseif result.content then -- llamacpp version
                 text = result.content
-                if result.content then M.context = result.content end
+                if result.content then
+                    globals.context = result.content
+                end
             elseif result.response then -- ollama generate endpoint
                 text = result.response
-                if result.context then M.context = result.context end
+                if result.context then
+                    globals.context = result.context
+                end
             end
         else
             write_to_buffer({"", "====== ERROR ====", str, "-------------", ""})
@@ -526,7 +549,7 @@ function Process_response(str, job_id, json_response)
 
     if text == nil then return end
 
-    M.result_string = M.result_string .. text
+    globals.result_string = globals.result_string .. text
     local lines = vim.split(text, "\n")
     write_to_buffer(lines)
 end
