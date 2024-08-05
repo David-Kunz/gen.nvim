@@ -67,6 +67,38 @@ for k, v in pairs(default_options) do M[k] = v end
 
 M.setup = function(opts) for k, v in pairs(opts) do M[k] = v end end
 
+---@type table<string, fun(text:string, content:string, bufnr:integer): string>
+local placeholder_hooks = {
+    ["%$input"] = function(text, content, bufnr)
+        return text:gsub("%$input", vim.fn.input("Prompt: "))
+    end,
+    ["%$register"] = function(text, content, bufnr)
+        local register = vim.fn.getreg('"')
+        if not register or register:match("^%s*$") then
+            error("Prompt uses $register but yank register is empty")
+        end
+        return text:gsub("%$register", register)
+    end,
+    ["%$text"] = function(text, content, bufnr)
+        return text:gsub("%$text", content)
+    end,
+    ["%$filetype"] = function(text, content, bufnr)
+        return text:gsub("%$filetype", vim.api.nvim_get_option_value("filetype", { buf = bufnr }))
+    end,
+}
+
+---@param placeholder string
+---@param callback fun(text:string, content:string, bufnr:integer):string
+M.add_placeholder = function(placeholder, callback)
+    if placeholder:match("^%%%$") == nil then
+        error("The placeholder should start with %$.")
+    elseif placeholder_hooks[placeholder] then
+        error(string.format("The placeholder %s is already registered.", placeholder))
+    else
+        placeholder_hooks[placeholder] = callback
+    end
+end
+
 local function close_window(buffer, opts)
     local lines = {}
     if opts.extract then
@@ -243,26 +275,20 @@ M.exec = function(options)
                                "\n")
 
     end
+
     local function substitute_placeholders(input)
-        if not input then return input end
+        if not input then
+            return input
+        end
         local text = input
-        if string.find(text, "%$input") then
-            local answer = vim.fn.input("Prompt: ")
-            text = string.gsub(text, "%$input", answer)
-        end
-
-        if string.find(text, "%$register") then
-            local register = vim.fn.getreg('"')
-            if not register or register:match("^%s*$") then
-                error("Prompt uses $register but yank register is empty")
-            end
-
-            text = string.gsub(text, "%$register", register)
-        end
-
+        local bufnr = vim.api.nvim_get_current_buf()
         content = string.gsub(content, "%%", "%%%%")
-        text = string.gsub(text, "%$text", content)
-        text = string.gsub(text, "%$filetype", vim.bo.filetype)
+        for placeholder, val in pairs(placeholder_hooks) do
+            if string.find(text, placeholder) ~= nil then
+                text = val(text, content, bufnr)
+            end
+        end
+
         return text
     end
 
