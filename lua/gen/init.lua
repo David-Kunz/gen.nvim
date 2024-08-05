@@ -325,6 +325,47 @@ M.exec = function(options)
         cmd = string.gsub(cmd, "%$body", json)
     end
 
+    opts.temp_filename = nil
+    if string.find(cmd, "%$file") then
+
+        local body = vim.tbl_extend("force",
+                                    {model = opts.model, stream = true},
+                                    opts.body)
+        local messages = {}
+        if globals.context then messages = globals.context end
+        -- Add new prompt to the context
+        table.insert(messages, {role = "user", content = prompt})
+        body.messages = messages
+        if M.model_options ~= nil then -- llamacpp server - model options: eg. temperature, top_k, top_p
+            body = vim.tbl_extend("force", body, M.model_options)
+        end
+        if opts.model_options ~= nil then -- override model options from gen command (if exist)
+            body = vim.tbl_extend("force", body, opts.model_options)
+        end
+        local temp_filename = os.tmpname()
+        opts.temp_filename = temp_filename
+
+        local json = vim.fn.json_encode(body)
+
+        -- Check if the filename is not empty or nil
+        if temp_filename ~= "" and temp_filename ~= nil then
+            -- Open a new file for writing with the specified filename
+            local fhandle = io.open(temp_filename, "w")
+
+            -- Check if the file was successfully opened
+            if fhandle ~= nil then
+                -- Write the JSON content to the file
+                fhandle:write(json)
+
+                -- Close the file handle
+                fhandle:close()
+            else
+                error("Failed to open file for writing.")
+            end
+        end
+        cmd = string.gsub(cmd, "%$file", "@" .. temp_filename)
+    end
+
     if globals.context ~= nil then write_to_buffer({"", "", "---", ""}) end
 
     M.run_command(cmd, opts)
@@ -397,6 +438,9 @@ M.run_command = function(cmd, opts)
         on_exit = function(_, b)
             if b == 0 and opts.replace and globals.result_buffer then
                 close_window(b, opts)
+            end
+            if opts.temp_filename ~= nil then
+                os.remove(opts.temp_filename)
             end
         end
     })
