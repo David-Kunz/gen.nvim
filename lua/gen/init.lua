@@ -251,6 +251,14 @@ M.exec = function(options)
             text = string.gsub(text, "%$input", answer)
         end
 
+        text = string.gsub(text, "%$register_([%w*+:/\"])", function(r_name)
+            local register = vim.fn.getreg(r_name)
+            if not register or register:match("^%s*$") then
+                error("Prompt uses $register_" .. rname .. " but register " .. rname .. " is empty")
+            end
+            return register
+        end)
+
         if string.find(text, "%$register") then
             local register = vim.fn.getreg('"')
             if not register or register:match("^%s*$") then
