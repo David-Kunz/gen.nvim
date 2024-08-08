@@ -118,8 +118,7 @@ local function get_window_options(opts)
         new_win_row = -5 - new_win_height
     end
 
-    return {
-        hide = opts.hidden,
+    local result = {
         relative = "cursor",
         width = new_win_width,
         height = new_win_height,
@@ -128,6 +127,13 @@ local function get_window_options(opts)
         style = "minimal",
         border = "rounded"
     }
+
+    local version = vim.version()
+    if version.major == 0 and version.minor >= 10 then
+        result.hide = opts.hidden
+    end
+
+    return result
 end
 
 local function write_to_buffer(lines)
