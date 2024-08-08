@@ -129,7 +129,7 @@ local function get_window_options(opts)
     }
 
     local version = vim.version()
-    if version.major == 0 and version.minor >= 10 then
+    if version.major > 0 or version.minor >= 10 then
         result.hide = opts.hidden
     end
 
