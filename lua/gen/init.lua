@@ -250,9 +250,19 @@ M.exec = function(options)
     end
 
     local content
+    local diagnostics = vim.diagnostic.get(globals.curr_buffer)
     if globals.start_pos == globals.end_pos then
         -- get text from whole buffer
-        content = table.concat(vim.api.nvim_buf_get_lines(globals.curr_buffer, 0, -1, false), "\n")
+        -- content = table.concat(vim.api.nvim_buf_get_lines(globals.curr_buffer, 0, -1, false), "\n")
+        local lines = vim.api.nvim_buf_get_lines(globals.curr_buffer, 0, -1, false)
+        for _, diagnostic in ipairs(diagnostics) do
+            table.insert(
+                lines,
+                diagnostic.lnum,
+                string.format("L%d: %s: %s", diagnostic.lnum, diagnostic.severity, diagnostic.message)
+            )
+        end
+        content = table.concat(lines, "\n")
     else
         content = table.concat(
             vim.api.nvim_buf_get_text(
