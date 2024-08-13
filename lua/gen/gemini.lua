@@ -24,7 +24,7 @@ M.Process_response_gemini = function(str, job_id, json_response, globals, write_
 
                     if result.done then
                         table.insert(globals.context, {
-                            role = "assistant",
+                            role = "model",
                             content = globals.context_buffer,
                         })
                         globals.context_buffer = ""
@@ -59,8 +59,9 @@ M.handle_gemini_response = function(data, job_id, opts, globals, write_to_buffer
         end
     end
 
-    debug_write({ "DEBUG: Entering handle_gemini_response" })
-    debug_write({ "DEBUG: Received data: " .. vim.inspect(data) })
+    debug_write({ "DEBUG: Entering handle_gemini_response\n" })
+    debug_write({ "DEBUG: Received data: " .. vim.inspect(data) .. "\n" })
+    -- data = data:gsub("^data: ", "")
 
     local partial_data = globals.partial_data or ""
 
@@ -72,7 +73,7 @@ M.handle_gemini_response = function(data, job_id, opts, globals, write_to_buffer
         end
     end
 
-    debug_write({ "DEBUG: Partial data after processing: " .. partial_data })
+    debug_write({ "DEBUG: Partial data after processing: " .. partial_data .. "\n" })
 
     -- Strip leading '[' or trailing ']' if present
     if partial_data:sub(1, 1) == "[" then
@@ -90,6 +91,7 @@ M.handle_gemini_response = function(data, job_id, opts, globals, write_to_buffer
     for _, line in ipairs(lines) do
         if string.len(line) > 0 then
             debug_write({ "DEBUG: Processing line: " .. line })
+            line = line:gsub("^data: ", "")
             local success, result = pcall(function()
                 return vim.fn.json_decode(line)
             end)
@@ -111,7 +113,7 @@ M.handle_gemini_response = function(data, job_id, opts, globals, write_to_buffer
                         if result.done then
                             debug_write({ "DEBUG: Result is done" })
                             table.insert(globals.context, {
-                                role = "assistant",
+                                role = "model",
                                 content = globals.context_buffer,
                             })
                             globals.context_buffer = ""
@@ -200,13 +202,59 @@ M.prepare_body = function(opts, prompt, globals)
     end
 
     -- Add system instruction --
+    local system_instruction = ""
     if opts.system_instruction ~= nil then
-        body.systemInstruction = { role = "system", parts = { { text = opts.system_instruction } } }
+        system_instruction = opts.system_instruction
     else
-        body.systemInstruction = { role = "system", parts = { { text = M.default_options.system_instruction } } }
+        system_instruction = M.default_options.system_instruction
     end
 
-    -- Add new prompt to the context
+    local cwd = vim.fn.getcwd()
+
+    local excludePattern = [[
+  **/*.{png,jpg,jpeg,gif,svg,mp4,webm,avi,mp3,wav,flac,zip,tar,gz,bz2,7z,iso,bin,exe,app,dmg,deb,rpm,apk,fig,xd,blend,fbx,obj,tmp,swp,\
+    lock,DS_Store,sqlite,log,sqlite3,dll,woff,woff2,ttf,eot,otf,ico,icns,csv,doc,docx,ppt,pptx,xls,xlsx,pdf,cmd,bat,dat,baseline,ps1,bin,exe,app,tmp,diff,bmp,ico},
+      **/{.editorconfig,.eslintignore,.eslintrc,tsconfig.json,.gitignore,.npmrc,LICENSE,esbuild.config.mjs,manifest.json,package-lock.json,\
+        version-bump.mjs,versions.json,yarn.lock,CONTRIBUTING.md,CHANGELOG.md,SECURITY.md,.nvmrc,.env,.env.production,.prettierrc,.prettierignore,.stylelintrc,\
+        CODEOWNERS,commitlint.config.js,renovate.json,pre-commit-config.yaml,.vimrc,poetry.lock,changelog.md,contributing.md,.pretterignore,.pretterrc.json,\
+        .pretterrc.yml,.pretterrc.js,.eslintrc.js,.eslintrc.json,.eslintrc.yml,.eslintrc.yaml,.stylelintrc.js,.stylelintrc.json,.stylelintrc.yml,.stylelintrc.yaml},
+              **/{screenshots,dist,node_modules,.git,.github,.vscode,build,coverage,tmp,out,temp,logs}/**
+    ]]
+
+    -- Get output directly from code2prompt
+    local cmd = string.format("code2prompt %s --json --exclude '%s'", cwd, excludePattern)
+    local handle = io.popen(cmd)
+    local codebase_content
+    if handle then
+        codebase_content = handle:read("*a")
+        local success, exit_type, exit_code = handle:close()
+        if not success then
+            print("Error: c2p command failed. Exit type:", exit_type, "Exit code:", exit_code)
+            return nil
+        end
+        if codebase_content == "" then
+            print("Error: c2p command returned empty result")
+            return nil
+        end
+        -- Print the second line of codebase_content
+        local lines = vim.split(codebase_content, "\n")
+        if #lines >= 2 then
+            -- print("Second line of codebase_content:", lines[2])
+        else
+            print("codebase_content has less than 2 lines")
+        end
+    else
+        print("Error: Unable to execute c2p command")
+        return nil
+    end
+
+    -- Combine system_instruction and codebase_content
+    local combined_system_instruction =
+        string.format("%s\n\n<codebase>%s</codebase>\n\n", system_instruction, codebase_content)
+    body.systemInstruction = { role = "system", parts = { { text = combined_system_instruction } } }
+
+    -- Add combined content and new prompt to the context
+    -- local combined_prompt = string.format("<codebase>%s</codebase>\n\n%s", codebase_content, prompt)
     table.insert(contents, { role = "user", parts = { { text = prompt } } })
     body.contents = contents
 
