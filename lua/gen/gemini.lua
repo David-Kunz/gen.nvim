@@ -198,15 +198,25 @@ M.prepare_body = function(opts, prompt, globals)
     if globals.context then
         contents = globals.context
     end
+
+    -- Add system instruction --
+    if opts.system_instruction ~= nil then
+        body.systemInstruction = { role = "system", parts = { { text = opts.system_instruction } } }
+    else
+        body.systemInstruction = { role = "system", parts = { { text = M.default_options.system_instruction } } }
+    end
+
     -- Add new prompt to the context
     table.insert(contents, { role = "user", parts = { { text = prompt } } })
     body.contents = contents
+
     if M.model_options ~= nil then -- llamacpp server - model options: eg. temperature, top_k, top_p
         body = vim.tbl_extend("force", body, M.model_options)
     end
     if opts.model_options ~= nil then -- override model options from gen command (if exist)
         body = vim.tbl_extend("force", body, opts.model_options)
     end
+
     return body
 end
 
