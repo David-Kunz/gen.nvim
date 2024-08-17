@@ -67,7 +67,7 @@ for k, v in pairs(default_options) do M[k] = v end
 
 M.setup = function(opts) for k, v in pairs(opts) do M[k] = v end end
 
-local function close_window(buffer, opts)
+local function close_window(opts)
     local lines = {}
     if opts.extract then
         local extracted = globals.result_string:match(opts.extract)
@@ -149,13 +149,18 @@ local function write_to_buffer(lines)
 
     local text = table.concat(lines or {}, "\n")
 
+    local cursor_pos = vim.api.nvim_win_get_cursor(globals.float_win)
+
     vim.api.nvim_set_option_value("modifiable", true,
                                   {buf = globals.result_buffer})
     vim.api.nvim_buf_set_text(globals.result_buffer, last_row - 1, last_col,
                               last_row - 1, last_col, vim.split(text, "\n"))
+
     -- Move the cursor to the end of the new lines
-    local new_last_row = last_row + #lines - 1
-    vim.api.nvim_win_set_cursor(globals.float_win, {new_last_row, 0})
+    if cursor_pos[1] == last_row then
+        local new_last_row = last_row + #lines - 1
+        vim.api.nvim_win_set_cursor(globals.float_win, {new_last_row, 0})
+    end
 
     vim.api.nvim_set_option_value("modifiable", false,
                                   {buf = globals.result_buffer})
@@ -198,7 +203,7 @@ local function create_window(cmd, opts)
                    {buffer = globals.result_buffer})
     vim.keymap.set("n", M.accept_map, function()
         opts.replace = true
-        close_window(0, opts)
+        close_window(opts)
     end, {buffer = globals.result_buffer})
     vim.keymap.set("n", M.retry_map, function()
         vim.api.nvim_win_close(0, true)
@@ -410,7 +415,7 @@ M.run_command = function(cmd, opts)
         end,
         on_exit = function(_, b)
             if b == 0 and opts.replace and globals.result_buffer then
-                close_window(b, opts)
+                close_window(opts)
             end
         end
     })
