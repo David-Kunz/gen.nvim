@@ -53,107 +53,45 @@ M.Process_response_gemini = function(str, job_id, json_response, globals, write_
 end
 
 M.handle_gemini_response = function(data, job_id, opts, globals, write_to_buffer)
-    local function debug_write(message)
-        if opts.debug then
-            write_to_buffer(message)
-        end
+    local json_string = data[1]
+    if opts.debug then
+        write_to_buffer({ "---json1---", json_string, "--------" })
     end
+    json_string = json_string:gsub("^data: ", "")
+    json_string = json_string:gsub("\r$", "")
 
-    debug_write({ "DEBUG: Entering handle_gemini_response\n" })
-    debug_write({ "DEBUG: Received data: " .. vim.inspect(data) .. "\n" })
-    -- data = data:gsub("^data: ", "")
-
-    local partial_data = globals.partial_data or ""
-
-    for _, line in ipairs(data) do
-        partial_data = partial_data .. line
-        if line:sub(-1) == "\r" then
-            partial_data = partial_data:gsub(",\r$", "")
-            partial_data = partial_data .. "\n"
-        end
+    if opts.debug then
+        write_to_buffer({ "---json2---", json_string, "--------" })
     end
+    local json_data = vim.fn.json_decode(json_string)
 
-    debug_write({ "DEBUG: Partial data after processing: " .. partial_data .. "\n" })
-
-    -- Strip leading '[' or trailing ']' if present
-    if partial_data:sub(1, 1) == "[" then
-        partial_data = partial_data:sub(2)
-    end
-    if partial_data:sub(-1) == "]" then
-        partial_data = partial_data:sub(1, -2)
-    end
-
-    local lines = vim.split(partial_data, "\n", { trimempty = true })
-    debug_write({ "DEBUG: Split lines: " .. vim.inspect(lines) })
-
-    partial_data = table.remove(lines) or ""
-
-    for _, line in ipairs(lines) do
-        if string.len(line) > 0 then
-            debug_write({ "DEBUG: Processing line: " .. line })
-            line = line:gsub("^data: ", "")
-            local success, result = pcall(function()
-                return vim.fn.json_decode(line)
-            end)
-
-            if success then
-                debug_write({ "DEBUG: JSON decode successful" })
-                debug_write({ "DEBUG: Decoded result: " .. vim.inspect(result) })
-                if result.candidates then
-                    local content = result.candidates[1].content.parts[1].text
-                    if content then
-                        debug_write({ "DEBUG: Content found: " .. content })
-                        globals.result_string = globals.result_string .. content
-                        write_to_buffer(vim.split(content, "\n"))
-
-                        globals.context = globals.context or {}
-                        globals.context_buffer = globals.context_buffer or ""
-                        globals.context_buffer = globals.context_buffer .. content
-
-                        if result.done then
-                            debug_write({ "DEBUG: Result is done" })
-                            table.insert(globals.context, {
-                                role = "model",
-                                content = globals.context_buffer,
-                            })
-                            globals.context_buffer = ""
-                        end
-                    else
-                        debug_write({ "DEBUG: No content found in candidates" })
-                    end
-                else
-                    debug_write({ "DEBUG: No candidates in result" })
-                end
-            else
-                debug_write({ "DEBUG: JSON decode failed" })
-                write_to_buffer({ "", "====== ERROR ====", line, "-------------", "" })
-                vim.fn.jobstop(job_id)
-            end
-        end
-    end
-
-    if partial_data:sub(-1) == "}" then
-        debug_write({ "DEBUG: Processing final partial data" })
-        partial_data = partial_data:gsub(",\r$", "")
-        -- Process the last partial data
-        local success, result = pcall(function()
-            return vim.fn.json_decode(partial_data)
-        end)
-        if success and result.candidates then
-            local content = result.candidates[1].content.parts[1].text
-            if content then
-                debug_write({ "DEBUG: Final content found: " .. content })
-                globals.result_string = globals.result_string .. content
-                write_to_buffer(vim.split(content, "\n"))
-            end
+    if json_data.candidates then
+        -- Check if 'content' and 'parts' exist within the first candidate
+        if json_data.candidates[1].content and json_data.candidates[1].content.parts then
+            write_to_buffer({ json_data.candidates[1].content.parts[1].text })
         else
-            debug_write({ "DEBUG: Final JSON decode failed or no candidates" })
+            if opts.debug then
+                write_to_buffer({
+                    "---CANDIDATE_FORMAT_ERROR---",
+                    "Candidate is missing 'content' or 'parts'",
+                    "--------",
+                })
+            end
+            -- {"usageMetadata": {"promptTokenCount": 13495,"candidatesTokenCount": 525,"totalTokenCount": 14020}}
+            if json_data.usageMetadata then
+                write_to_buffer({ "\n\n------------", "promptTokenCount: ", json_data.usageMetadata.promptTokenCount })
+                write_to_buffer({ "", "totalTokenCount: ", json_data.usageMetadata.totalTokenCount })
+            end
         end
-        partial_data = ""
+    else
+        write_to_buffer({ "---NO CANDIDATES---", json_data, "--------" })
     end
 
-    globals.partial_data = partial_data
-    debug_write({ "DEBUG: Exiting handle_gemini_response" })
+    -- if json_data.candidates then
+    --     write_to_buffer({ json_data.candidates[1].content.parts[1].text })
+    -- else
+    --     write_to_buffer({ "---NO CANDIDATES---", json_data, "--------" })
+    -- end
 end
 
 M.model_config = {
@@ -218,11 +156,17 @@ M.prepare_body = function(opts, prompt, globals)
         version-bump.mjs,versions.json,yarn.lock,CONTRIBUTING.md,CHANGELOG.md,SECURITY.md,.nvmrc,.env,.env.production,.prettierrc,.prettierignore,.stylelintrc,\
         CODEOWNERS,commitlint.config.js,renovate.json,pre-commit-config.yaml,.vimrc,poetry.lock,changelog.md,contributing.md,.pretterignore,.pretterrc.json,\
         .pretterrc.yml,.pretterrc.js,.eslintrc.js,.eslintrc.json,.eslintrc.yml,.eslintrc.yaml,.stylelintrc.js,.stylelintrc.json,.stylelintrc.yml,.stylelintrc.yaml},
-              **/{screenshots,dist,node_modules,.git,.github,.vscode,build,coverage,tmp,out,temp,logs}/**
+              **/{screenshots,dist,node_modules,.git,.github,.vscode,build,coverage,tmp,out,temp,logs,__pycache__,.aider*,.venv,venv,.pdm*.avante*}/**
     ]]
 
     -- Get output directly from code2prompt
-    local cmd = string.format("code2prompt %s --json --exclude '%s'", cwd, excludePattern)
+    local fileExtensions = vim.fn.input("File extensions for c2p (i.e. *.go,*.html): ")
+    local cmd = string.format(
+        "code2prompt %s --json --include '%s' --exclude '%s' --include-priority --relative-paths --diff",
+        cwd,
+        fileExtensions,
+        excludePattern
+    )
     local handle = io.popen(cmd)
     local codebase_content
     if handle then
@@ -249,13 +193,19 @@ M.prepare_body = function(opts, prompt, globals)
     end
 
     -- Combine system_instruction and codebase_content
-    local combined_system_instruction =
-        string.format("%s\n\n<codebase>%s</codebase>\n\n", system_instruction, codebase_content)
-    body.systemInstruction = { role = "system", parts = { { text = combined_system_instruction } } }
+    -- local combined_system_instruction =
+    --     string.format("%s\n\n<codebase>%s</codebase>\n\n", system_instruction, codebase_content)
+    body.systemInstruction = { role = "user", parts = { { text = system_instruction } } }
 
     -- Add combined content and new prompt to the context
     -- local combined_prompt = string.format("<codebase>%s</codebase>\n\n%s", codebase_content, prompt)
-    table.insert(contents, { role = "user", parts = { { text = prompt } } })
+    table.insert(contents, {
+        role = "user",
+        parts = {
+            { text = string.format("<context>%s</context>", codebase_content) },
+            { text = prompt },
+        },
+    })
     body.contents = contents
 
     if M.model_options ~= nil then -- llamacpp server - model options: eg. temperature, top_k, top_p

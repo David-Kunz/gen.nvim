@@ -250,32 +250,69 @@ M.exec = function(options)
     end
 
     local content
-    local diagnostics = vim.diagnostic.get(globals.curr_buffer)
+    -- local diagnostics = vim.diagnostic.get(globals.curr_buffer)
+    local diagnosticMessages = {}
+
     if globals.start_pos == globals.end_pos then
-        -- get text from whole buffer
-        -- content = table.concat(vim.api.nvim_buf_get_lines(globals.curr_buffer, 0, -1, false), "\n")
-        local lines = vim.api.nvim_buf_get_lines(globals.curr_buffer, 0, -1, false)
-        for _, diagnostic in ipairs(diagnostics) do
-            table.insert(
-                lines,
-                diagnostic.lnum,
-                string.format("L%d: %s: %s", diagnostic.lnum, diagnostic.severity, diagnostic.message)
+        -- local lines = vim.api.nvim_buf_get_lines(globals.curr_buffer, 0, -1, false)
+        if globals.start_pos == globals.end_pos then
+            content = table.concat(vim.api.nvim_buf_get_lines(globals.curr_buffer, 0, -1, false), "\n")
+        else
+            content = table.concat(
+                vim.api.nvim_buf_get_text(
+                    globals.curr_buffer,
+                    globals.start_pos[2] - 1,
+                    globals.start_pos[3] - 1,
+                    globals.end_pos[2] - 1,
+                    globals.end_pos[3],
+                    {}
+                ),
+                "\n"
             )
         end
-        content = table.concat(lines, "\n")
-    else
-        content = table.concat(
-            vim.api.nvim_buf_get_text(
-                globals.curr_buffer,
-                globals.start_pos[2] - 1,
-                globals.start_pos[3] - 1,
-                globals.end_pos[2] - 1,
-                globals.end_pos[3],
-                {}
-            ),
-            "\n"
-        )
+
+        -- Collect diagnostic messages for all buffers
+        for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+            local filename = vim.api.nvim_buf_get_name(bufnr)
+            local diagnostics = vim.diagnostic.get(bufnr)
+            if diagnostics and type(diagnostics) == "table" then
+                for _, diagnostic in ipairs(diagnostics) do
+                    table.insert(
+                        diagnosticMessages,
+                        string.format(
+                            "ERROR (%s, L%d): %s: %s\n",
+                            filename, -- Use filename instead of bufnr
+                            diagnostic.lnum + 1,
+                            diagnostic.severity,
+                            diagnostic.message
+                        )
+                    )
+                end
+            end
+        end
+        -- -- Collect diagnostic messages for all buffers
+        -- for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        --     local diagnostics = vim.diagnostic.get(bufnr)
+        --     if diagnostics and type(diagnostics) == "table" then
+        --         for _, diagnostic in ipairs(diagnostics) do
+        --             table.insert(
+        --                 diagnosticMessages,
+        --                 string.format(
+        --                     "ERROR (Buffer %d, L%d): %s: %s\n",
+        --                     bufnr,
+        --                     diagnostic.lnum,
+        --                     diagnostic.severity,
+        --                     diagnostic.message
+        --                 )
+        --             )
+        --         end
+        --     end
+        -- end
+
+        -- Append diagnostic messages to the content
+        content = content .. "\n" .. table.concat(diagnosticMessages)
     end
+
     local function substitute_placeholders(input)
         if not input then
             return input
