@@ -377,6 +377,7 @@ M.exec = function(options)
         cmd = string.gsub(cmd, "%$prompt", prompt_escaped)
     end
     cmd = string.gsub(cmd, "%$model", opts.model)
+    local temp_file
     if string.find(cmd, "%$body") then
         local body
         if opts.model:find("^gemini") then
@@ -397,8 +398,24 @@ M.exec = function(options)
                 body = vim.tbl_extend("force", body, opts.model_options)
             end
         end
+
         local json = opts.json(body)
-        cmd = string.gsub(cmd, "%$body", json)
+        json = json:sub(2, -2)
+
+        -- Create a temporary file
+        temp_file = os.tmpname()
+        local file = io.open(temp_file, "w")
+        file:write(json)
+        file:close()
+
+        -- Store the temp_file path for later use
+        globals.temp_file = temp_file
+    end
+
+    write_to_buffer({ "temp_file", temp_file, "---------" })
+    -- Modify the command to use the temporary file if it exists
+    if temp_file then
+        cmd = string.gsub(cmd, "%$body", "@" .. temp_file)
     end
 
     if globals.context ~= nil then
@@ -483,6 +500,12 @@ M.run_command = function(cmd, opts)
         on_exit = function(_, b)
             if b == 0 and opts.replace and globals.result_buffer then
                 close_window(b, opts)
+            end
+
+            -- Clean up the temporary file
+            if globals.temp_file and vim.loop.fs_stat(globals.temp_file) then
+                os.remove(globals.temp_file)
+                globals.temp_file = nil
             end
         end,
     })
