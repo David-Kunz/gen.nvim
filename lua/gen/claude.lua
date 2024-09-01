@@ -5,13 +5,16 @@ M.Process_response_claude = function(str, job_id, json_response, globals, write_
         return
     end
     local text
-    write_to_buffer({ "str", str, "-----\n" })
 
     if json_response then
         local data_packet = str:sub(2, -2)
         local success, result = pcall(function()
             return vim.fn.json_decode(data_packet)
         end)
+        if not success then
+            write_to_buffer({ "Error decoding JSON: " .. tostring(result) })
+            return
+        end
         write_to_buffer({ "\n", result[1], "\n" })
 
         if success then
@@ -58,14 +61,7 @@ end
 M.handle_claude_response = function(data, job_id, opts, globals, write_to_buffer)
     local json_string = data[1]
     if opts.debug then
-        write_to_buffer({ "---json1---", json_string, "--------" })
-    end
-    json_string = json_string:gsub("^data: ", "")
-    json_string = json_string:gsub("\r$", "")
-    json_string = extract_data(json_string)
-    --
-    if opts.debug then
-        write_to_buffer({ "---json2---", json_string, "--------" })
+        write_to_buffer({ "---json---", json_string, "--------" })
     end
     local json_data = vim.fn.json_decode(json_string)
     --
@@ -103,9 +99,9 @@ end
 M.prepare_body = function(opts, prompt, globals)
     local body = vim.tbl_extend("force", {}, opts.body)
     -- local contents = {}
-    -- if globals.context then
-    --     contents = globals.context
-    -- end
+    -- -- if globals.context then
+    -- --     contents = globals.context
+    -- -- end
 
     local cwd = vim.fn.getcwd()
 
@@ -120,57 +116,43 @@ M.prepare_body = function(opts, prompt, globals)
     ]]
 
     local cmd = string.format(
-        "code2prompt %s --json --exclude '%s' --include-priority --relative-paths --diff",
+        "code2prompt %s  --exclude '%s' --relative-paths --no-codeblock --output /tmp/code.md",
         cwd,
         excludePattern
     )
     local handle = io.popen(cmd)
-    local codebase_content
     if handle then
-        codebase_content = handle:read("*a")
-        local success, exit_type, exit_code = handle:close()
-        if not success then
-            print("Error: c2p command failed. Exit type:", exit_type, "Exit code:", exit_code)
-            return nil
-        end
-        if codebase_content == "" then
-            print("Error: c2p command returned empty result")
-            return nil
-        end
-        -- Print the second line of codebase_content
-        local lines = vim.split(codebase_content, "\n")
-        if #lines >= 2 then
-            -- print("Second line of codebase_content:", lines[2])
-        else
-            print("codebase_content has less than 2 lines")
-        end
+        handle:close()
     else
         print("Error: Unable to execute c2p command")
         return nil
     end
 
-    -- table.insert(contents, {
-    --     role = "user",
-    --     parts = {
-    --         { text = string.format("<context>%s</context>", codebase_content) },
-    --         { text = prompt },
-    --     },
-    -- })
-    local contents = "banana"
-    body.data = contents
+    local code_md_path = vim.fn.expand("/tmp/code.md")
+    local codebase_content = {}
+    local success, result = pcall(vim.fn.readfile, code_md_path)
+    if success then
+        codebase_content = result
+    else
+        print("Warning: Unable to read /tmp/code.md. Proceeding without codebase context.")
+    end
+    local cleaned_prompt = prompt:gsub("\\'", "")
+    local cleaned_codebase = table.concat(codebase_content, "\n"):gsub("\\'", "")
 
-    -- if M.model_options ~= nil then -- llamacpp server - model options: eg. temperature, top_k, top_p
-    --     body = vim.tbl_extend("force", body, M.model_options)
-    -- end
-    -- if opts.model_options ~= nil then -- override model options from gen command (if exist)
-    --     body = vim.tbl_extend("force", body, opts.model_options)
-    -- end
+    local system_instruction = ""
+    if opts.system_instruction ~= nil then
+        system_instruction = opts.system_instruction
+    else
+        system_instruction = M.default_options.system_instruction
+    end
+
+    body.data = {
+        system = system_instruction,
+        codebase = #codebase_content > 0 and cleaned_codebase or "",
+        prompt = cleaned_prompt,
+    }
 
     return body
 end
 
-function extract_data(text)
-    local extracted_text = string.gsub(text, '"data":"([^"]*)"', "%1")
-    return extracted_text
-end
 return M

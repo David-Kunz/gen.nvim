@@ -1,4 +1,7 @@
-local prompts = require("gen.prompts")
+local ok, prompts = pcall(require, "gen.prompts")
+if not ok then
+    error("Failed to load gen.prompts module: " .. tostring(prompts))
+end
 local gemini = require("gen.gemini")
 local claude = require("gen.claude")
 local M = vim.tbl_deep_extend("force", {}, gemini.model_config or {})
@@ -404,6 +407,7 @@ M.exec = function(options)
 
         local json = opts.json(body)
         json = json:sub(2, -2)
+        json = json:gsub("\\'", "")
 
         -- Create a temporary file
         temp_file = os.tmpname()
@@ -507,10 +511,14 @@ M.run_command = function(cmd, opts)
                 close_window(b, opts)
             end
 
-            -- Clean up the temporary file
+            -- Clean up the temporary file and code.md
             -- if globals.temp_file and vim.loop.fs_stat(globals.temp_file) then
             --     os.remove(globals.temp_file)
             --     globals.temp_file = nil
+            -- end
+            -- local code_md_path = vim.fn.expand("/tmp/code.md")
+            -- if vim.loop.fs_stat(code_md_path) then
+            --     os.remove(code_md_path)
             -- end
         end,
     })

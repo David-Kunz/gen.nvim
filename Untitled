@@ -1,9 +1,0 @@
-p
-Error executing vim.schedule lua callback: ...ihunk/.local/share/nvim/lazy/gen.nvim/lua/gen/claude.lua:104: bad argument #4 to 'format' (value expected)
-stack traceback:
-	[C]: in function 'format'
-	...ihunk/.local/share/nvim/lazy/gen.nvim/lua/gen/claude.lua:104: in function 'prepare_body'
-	.../jihunk/.local/share/nvim/lazy/gen.nvim/lua/gen/init.lua:387: in function 'exec'
-	.../jihunk/.local/share/nvim/lazy/gen.nvim/lua/gen/init.lua:605: in function 'cb'
-	.../jihunk/.local/share/nvim/lazy/gen.nvim/lua/gen/init.lua:580: in function 'cb'
-	...ocal/share/nvim/lazy/dressing.nvim/lua/dressing/util.lua:206: in function <...ocal/share/nvim/lazy/dressing.nvim/lua/dressing/util.lua:202>
