@@ -1,5 +1,6 @@
 local prompts = require("gen.prompts")
 local gemini = require("gen.gemini")
+local claude = require("gen.claude")
 local M = vim.tbl_deep_extend("force", {}, gemini.model_config or {})
 
 local globals = {}
@@ -382,6 +383,8 @@ M.exec = function(options)
         local body
         if opts.model:find("^gemini") then
             body = gemini.prepare_body(opts, prompt, globals)
+        elseif opts.model:find("^claude") then
+            body = claude.prepare_body(opts, prompt, globals)
         else
             body = vim.tbl_extend("force", { model = opts.model, stream = true }, opts.body)
             local messages = {}
@@ -434,11 +437,11 @@ M.run_command = function(cmd, opts)
     end
     local partial_data = ""
     if opts.debug then
-        print(cmd)
+        vim.print(cmd)
     end
 
     Job_id = vim.fn.jobstart(cmd, {
-        -- stderr_buffered = opts.debug,
+        stderr_buffered = opts.debug,
         on_stdout = function(_, data, _)
             -- window was closed, so cancel the job
             if not globals.float_win or not vim.api.nvim_win_is_valid(globals.float_win) then
@@ -456,6 +459,8 @@ M.run_command = function(cmd, opts)
             end
             if opts.model:find("^gemini") then
                 gemini.handle_gemini_response(data, Job_id, opts, globals, write_to_buffer)
+            elseif opts.model:find("^claude") then
+                claude.handle_claude_response(data, Job_id, opts, globals, write_to_buffer)
             else
                 for _, line in ipairs(data) do
                     partial_data = partial_data .. line
@@ -503,10 +508,10 @@ M.run_command = function(cmd, opts)
             end
 
             -- Clean up the temporary file
-            if globals.temp_file and vim.loop.fs_stat(globals.temp_file) then
-                os.remove(globals.temp_file)
-                globals.temp_file = nil
-            end
+            -- if globals.temp_file and vim.loop.fs_stat(globals.temp_file) then
+            --     os.remove(globals.temp_file)
+            --     globals.temp_file = nil
+            -- end
         end,
     })
 
