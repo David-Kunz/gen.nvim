@@ -56,30 +56,30 @@ M.Process_response_claude = function(str, job_id, json_response, globals, write_
 end
 
 M.handle_claude_response = function(data, job_id, opts, globals, write_to_buffer)
-    -- write_to_buffer({ "", tostring(data[1]), "" })
     local json_string = data[1]
-    -- if opts.debug then
-    --     write_to_buffer({ "---json1---", json_string, "--------" })
-    -- end
+    if opts.debug then
+        write_to_buffer({ "---json1---", json_string, "--------" })
+    end
     json_string = json_string:gsub("^data: ", "")
     json_string = json_string:gsub("\r$", "")
     json_string = extract_data(json_string)
     --
-    -- if opts.debug then
-    --     write_to_buffer({ "---json2---", json_string, "--------" })
-    -- end
+    if opts.debug then
+        write_to_buffer({ "---json2---", json_string, "--------" })
+    end
     local json_data = vim.fn.json_decode(json_string)
     --
-    -- write_to_buffer({ "structure: ", vim.inspect(json_data), "" })
+    if opts.debug then
+        write_to_buffer({ "structure: ", vim.inspect(json_data), "" })
+    end
     local json_data1 = vim.fn.json_decode(json_data)
-    -- write_to_buffer({ "structure2: ", vim.inspect(json_data1), "" })
+    if opts.debug then
+        write_to_buffer({ "structure2: ", vim.inspect(json_data1), "" })
+    end
     if json_data1.data then
         write_to_buffer({ json_data1.data })
     else
         write_to_buffer({ "---NO CANDIDATES---", json_data, "--------" })
-        -- local json_data2 = vim.fn.json_decode(json_string)
-        -- string.gsub(json_data2, '"data":"([^"]+)"', "%1")
-        -- write_to_buffer({ "---NO CANDIDATES2---", json_data2, "--------" })
     end
 end
 
