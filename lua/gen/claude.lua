@@ -18,7 +18,7 @@ M.Process_response_claude = function(str, job_id, json_response, globals, write_
         end)
         if not success then
             write_to_buffer({ "Error decoding JSON: " .. tostring(result) })
-            return
+            -- return
         end
         write_to_buffer({ "\n", result[1], "\n" })
 
@@ -179,7 +179,7 @@ M.prepare_body = function(opts, prompt, globals)
         print("Warning: Unable to read temporary file. Proceeding without codebase context. Error: " .. tostring(err))
     end
     local cleaned_prompt = prompt:gsub("\\'", "")
-    local cleaned_codebase = table.concat(codebase_content, "\n"):gsub("\\'", "")
+    local cleaned_codebase = codebase_content:gsub("\\'", "")
 
     local system_instruction = ""
     if opts.system_instruction ~= nil then
