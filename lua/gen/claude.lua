@@ -65,6 +65,11 @@ end
 
 M.handle_claude_response = function(data, job_id, opts, globals, write_to_buffer)
     local json_string = data[1]
+    if json_string == "" then
+        write_to_buffer({ "Warning: Received empty string" })
+        return
+    end
+
     if opts.debug then
         write_to_buffer({ "---Raw JSON---", json_string, "--------" })
     end
