@@ -155,26 +155,28 @@ M.prepare_body = function(opts, prompt, globals)
               **/{screenshots,dist,node_modules,.git,.github,.vscode,build,coverage,tmp,out,temp,logs,__pycache__,.aider*,.venv,venv,.pdm*.avante*}/**
     ]]
 
+    local temp_file = os.tmpname()
     local cmd = string.format(
-        "code2prompt %s  --exclude '%s' --relative-paths --no-codeblock --output /tmp/code.md",
-        cwd,
-        excludePattern
+        "code2prompt %s  --exclude '%s' --relative-paths --no-codeblock --output %s",
+        vim.fn.shellescape(cwd),
+        vim.fn.shellescape(excludePattern),
+        vim.fn.shellescape(temp_file)
     )
-    local handle = io.popen(cmd)
-    if handle then
-        handle:close()
-    else
-        print("Error: Unable to execute c2p command")
+    local success, result = pcall(vim.fn.system, cmd)
+    if not success then
+        print("Error: Unable to execute code2prompt command: " .. tostring(result))
+        os.remove(temp_file)
         return nil
     end
 
-    local code_md_path = vim.fn.expand("/tmp/code.md")
     local codebase_content = {}
-    local success, result = pcall(vim.fn.readfile, code_md_path)
-    if success then
-        codebase_content = result
+    local file, err = io.open(temp_file, "r")
+    if file then
+        codebase_content = file:read("*all")
+        file:close()
+        os.remove(temp_file)
     else
-        print("Warning: Unable to read /tmp/code.md. Proceeding without codebase context.")
+        print("Warning: Unable to read temporary file. Proceeding without codebase context. Error: " .. tostring(err))
     end
     local cleaned_prompt = prompt:gsub("\\'", "")
     local cleaned_codebase = table.concat(codebase_content, "\n"):gsub("\\'", "")
