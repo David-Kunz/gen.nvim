@@ -2,12 +2,17 @@ local M = {}
 
 M.Process_response_claude = function(str, job_id, json_response, globals, write_to_buffer)
     if string.len(str) == 0 then
+        write_to_buffer({ "Warning: Received empty string" })
         return
     end
     local text
 
     if json_response then
         local data_packet = str:sub(2, -2)
+        if data_packet == "" then
+            write_to_buffer({ "Warning: Empty data packet after trimming" })
+            return
+        end
         local success, result = pcall(function()
             return vim.fn.json_decode(data_packet)
         end)
@@ -61,21 +66,56 @@ end
 M.handle_claude_response = function(data, job_id, opts, globals, write_to_buffer)
     local json_string = data[1]
     if opts.debug then
-        write_to_buffer({ "---json---", json_string, "--------" })
+        write_to_buffer({ "---Raw JSON---", json_string, "--------" })
     end
-    local json_data = vim.fn.json_decode(json_string)
-    --
+
+    local success, json_data = pcall(vim.fn.json_decode, json_string)
+    if not success then
+        write_to_buffer({ "Error parsing JSON: " .. tostring(json_data) })
+        return
+    end
+
     if opts.debug then
-        write_to_buffer({ "structure: ", vim.inspect(json_data), "" })
+        write_to_buffer({ "Parsed structure:", vim.inspect(json_data), "" })
     end
-    local json_data1 = vim.fn.json_decode(json_data)
-    if opts.debug then
-        write_to_buffer({ "structure2: ", vim.inspect(json_data1), "" })
+
+    -- Handle different response structures
+    if type(json_data) == "string" then
+        -- If json_data is still a string, try parsing it again
+        success, json_data = pcall(vim.fn.json_decode, json_data)
+        if not success then
+            write_to_buffer({ "Error parsing inner JSON: " .. tostring(json_data) })
+            return
+        end
     end
-    if json_data1.data then
-        write_to_buffer({ json_data1.data })
+
+    if json_data.data then
+        write_to_buffer({ json_data.data })
+    elseif json_data.content then
+        write_to_buffer({ json_data.content })
+    elseif json_data.text then
+        write_to_buffer({ json_data.text })
+    elseif json_data.message then
+        write_to_buffer({ json_data.message })
     else
-        write_to_buffer({ "---NO CANDIDATES---", json_data, "--------" })
+        write_to_buffer({ "Unexpected response structure:", vim.inspect(json_data) })
+    end
+
+    -- Accumulate response in globals for context
+    globals.result_string = (globals.result_string or "")
+        .. (json_data.data or json_data.content or json_data.text or json_data.message or "")
+
+    -- Check if this is the end of the response
+    if json_data.done or json_data.is_final then
+        write_to_buffer({ "---Response Complete---" })
+        -- Here you might want to add the accumulated response to the context
+        if globals.context then
+            table.insert(globals.context, {
+                role = "assistant",
+                content = globals.result_string,
+            })
+        end
+        globals.result_string = "" -- Reset for next response
     end
 end
 
@@ -106,11 +146,11 @@ M.prepare_body = function(opts, prompt, globals)
     local cwd = vim.fn.getcwd()
 
     local excludePattern = [[
-  **/*.{png,jpg,jpeg,gif,svg,mp4,webm,avi,mp3,wav,flac,zip,tar,gz,bz2,7z,iso,bin,exe,app,dmg,deb,rpm,apk,fig,xd,blend,fbx,obj,tmp,swp,\
+  **/*.{png,jpg,jpeg,gif,svg,mp4,webm,avi,mp3,wav,flac,zip,tar,gz,bz2,7z,iso,bin,exe,app,dmg,deb,rpm,apk,fig,xd,blend,fbx,obj,tmp,swp,
     lock,DS_Store,sqlite,log,sqlite3,dll,woff,woff2,ttf,eot,otf,ico,icns,csv,doc,docx,ppt,pptx,xls,xlsx,pdf,cmd,bat,dat,baseline,ps1,bin,exe,app,tmp,diff,bmp,ico},
-      **/{.editorconfig,.eslintignore,.eslintrc,tsconfig.json,.gitignore,.npmrc,LICENSE,esbuild.config.mjs,manifest.json,package-lock.json,\
-        version-bump.mjs,versions.json,yarn.lock,CONTRIBUTING.md,CHANGELOG.md,SECURITY.md,.nvmrc,.env,.env.production,.prettierrc,.prettierignore,.stylelintrc,\
-        CODEOWNERS,commitlint.config.js,renovate.json,pre-commit-config.yaml,.vimrc,poetry.lock,changelog.md,contributing.md,.pretterignore,.pretterrc.json,\
+      **/{.editorconfig,.eslintignore,.eslintrc,tsconfig.json,.gitignore,.npmrc,LICENSE,esbuild.config.mjs,manifest.json,package-lock.json,
+        version-bump.mjs,versions.json,yarn.lock,CONTRIBUTING.md,CHANGELOG.md,SECURITY.md,.nvmrc,.env,.env.production,.prettierrc,.prettierignore,.stylelintrc,
+        CODEOWNERS,commitlint.config.js,renovate.json,pre-commit-config.yaml,.vimrc,poetry.lock,changelog.md,contributing.md,.pretterignore,.pretterrc.json,
         .pretterrc.yml,.pretterrc.js,.eslintrc.js,.eslintrc.json,.eslintrc.yml,.eslintrc.yaml,.stylelintrc.js,.stylelintrc.json,.stylelintrc.yml,.stylelintrc.yaml},
               **/{screenshots,dist,node_modules,.git,.github,.vscode,build,coverage,tmp,out,temp,logs,__pycache__,.aider*,.venv,venv,.pdm*.avante*}/**
     ]]

@@ -512,10 +512,10 @@ M.run_command = function(cmd, opts)
             end
 
             -- Clean up the temporary file and code.md
-            -- if globals.temp_file and vim.loop.fs_stat(globals.temp_file) then
-            --     os.remove(globals.temp_file)
-            --     globals.temp_file = nil
-            -- end
+            if globals.temp_file and vim.loop.fs_stat(globals.temp_file) then
+                os.remove(globals.temp_file)
+                globals.temp_file = nil
+            end
             -- local code_md_path = vim.fn.expand("/tmp/code.md")
             -- if vim.loop.fs_stat(code_md_path) then
             --     os.remove(code_md_path)
