@@ -74,7 +74,7 @@ local function close_window(opts)
         if not extracted then
             if not opts.no_auto_close then
                 vim.api.nvim_win_hide(globals.float_win)
-                vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
+                if globals.result_buffer ~= nil then vim.api.nvim_buf_delete(globals.result_buffer, {force = true}) end
                 reset()
             end
             return
