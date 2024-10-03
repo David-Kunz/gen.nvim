@@ -178,7 +178,9 @@ local function create_window(cmd, opts)
         vim.api.nvim_set_option_value("linebreak", true,
                                       {win = globals.float_win})
     end
-    if M.display_mode == "float" then
+
+    local display_mode = opts.display_mode or M.display_mode
+    if display_mode == "float" then
         if globals.result_buffer then
             vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
         end
@@ -190,7 +192,7 @@ local function create_window(cmd, opts)
 
         globals.float_win = vim.api.nvim_open_win(globals.result_buffer, true,
                                                   win_opts)
-    elseif M.display_mode == "horizontal-split" then
+    elseif display_mode == "horizontal-split" then
         vim.cmd("split gen.nvim")
         setup_split()
     else
