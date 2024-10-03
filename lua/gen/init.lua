@@ -13,6 +13,10 @@ local function reset(keep_selection)
     globals.result_string = ""
     globals.context = nil
     globals.context_buffer = nil
+    if globals.temp_filename then
+        os.remove(globals.temp_filename)
+        globals.temp_filename = nil
+    end
 end
 reset()
 
@@ -34,6 +38,7 @@ local default_options = {
     model = "mistral",
     host = "localhost",
     port = "11434",
+    file = false,
     debug = false,
     body = {stream = true},
     show_prompt = false,
@@ -74,7 +79,10 @@ local function close_window(opts)
         if not extracted then
             if not opts.no_auto_close then
                 vim.api.nvim_win_hide(globals.float_win)
-                if globals.result_buffer ~= nil then vim.api.nvim_buf_delete(globals.result_buffer, {force = true}) end
+                if globals.result_buffer ~= nil then
+                    vim.api.nvim_buf_delete(globals.result_buffer,
+                                            {force = true})
+                end
                 reset()
             end
             return
@@ -267,7 +275,8 @@ M.exec = function(options)
         text = string.gsub(text, "%$register_([%w*+:/\"])", function(r_name)
             local register = vim.fn.getreg(r_name)
             if not register or register:match("^%s*$") then
-                error("Prompt uses $register_" .. rname .. " but register " .. rname .. " is empty")
+                error("Prompt uses $register_" .. rname .. " but register " ..
+                          rname .. " is empty")
             end
             return register
         end)
@@ -304,11 +313,13 @@ M.exec = function(options)
 
     local cmd
 
-    opts.json = function(body)
+    opts.json = function(body, shellescape)
         local json = vim.fn.json_encode(body)
-        json = vim.fn.shellescape(json)
-        if vim.o.shell == 'cmd.exe' then
-            json = string.gsub(json, '\\\"\"', '\\\\\\\"')
+        if shellescape then
+            json = vim.fn.shellescape(json)
+            if vim.o.shell == 'cmd.exe' then
+                json = string.gsub(json, '\\\"\"', '\\\\\\\"')
+            end
         end
         return json
     end
@@ -342,8 +353,17 @@ M.exec = function(options)
             body = vim.tbl_extend("force", body, opts.model_options)
         end
 
-        local json = opts.json(body)
-        cmd = string.gsub(cmd, "%$body", json)
+        if opts.file ~= nil then
+            local json = opts.json(body, false)
+            globals.temp_filename = os.tmpname()
+            local fhandle = io.open(globals.temp_filename, "w")
+            fhandle:write(json)
+            fhandle:close()
+            cmd = string.gsub(cmd, "%$body", "@" .. globals.temp_filename)
+        else
+            local json = opts.json(body, true)
+            cmd = string.gsub(cmd, "%$body", json)
+        end
     end
 
     if globals.context ~= nil then write_to_buffer({"", "", "---", ""}) end
