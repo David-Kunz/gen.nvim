@@ -1,15 +1,22 @@
-# gen.nvim
+<div align="center">
+    
+# ✨ gen.nvim ✨
 
 Generate text using LLMs with customizable prompts
 
-![gen_nvim](https://github.com/David-Kunz/gen.nvim/assets/1009936/79f17157-9327-484a-811b-2d71ceb8fbe3)
+<img src="https://github.com/David-Kunz/gen.nvim/assets/1009936/79f17157-9327-484a-811b-2d71ceb8fbe3" alt="gen_nvim" style="width:100%; max-width:800px;">
 
-## Video
+## 🎥 Video
 
-[![Local LLMs in Neovim: gen.nvim](https://user-images.githubusercontent.com/1009936/273126287-7b5f2b40-c678-47c5-8f21-edf9516f6034.jpg)](https://youtu.be/FIZt7MinpMY?si=KChSuJJDyrcTdYiM)
+<a href="https://youtu.be/FIZt7MinpMY?si=KChSuJJDyrcTdYiM">
+    <img src="https://user-images.githubusercontent.com/1009936/273126287-7b5f2b40-c678-47c5-8f21-edf9516f6034.jpg" alt="Local LLMs in Neovim: gen.nvim" style="width:100%; max-width:800px;">
+</a>
+
+</div>
 
 
-## Requires
+
+## 💡Requires
 
 - [Ollama](https://ollama.ai/) with an appropriate model, e.g. [`llama3.1`](https://ollama.com/library/llama3.1), [`mistral`](https://ollama.ai/library/mistral), etc.
 - [Curl](https://curl.se/)
@@ -72,11 +79,10 @@ require('gen').setup({
 
 
 
-## Usage
+🚀 Usage
+Use the command `Gen` to generate text based on predefined and customizable prompts.
 
-Use command `Gen` to generate text based on predefined and customizable prompts.
-
-Example key maps:
+🎯 Example Key Mappings:
 
 ```lua
 vim.keymap.set({ 'n', 'v' }, '<leader>]', ':Gen<CR>')
