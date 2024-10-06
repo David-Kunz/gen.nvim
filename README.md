@@ -40,7 +40,7 @@ Example with Lazy
     "David-Kunz/gen.nvim",
     opts = {
         model = "mistral", -- The default model to use.
-        quit_map = "q", -- set keymap for close the response window
+        quit_map = "q", -- set keymap to close the response window
         retry_map = "<c-r>", -- set keymap to re-send the current prompt
         accept_map = "<c-cr>", -- set keymap to replace the previous selection with the last result
         host = "localhost", -- The host running the Ollama service.
