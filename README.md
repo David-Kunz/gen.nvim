@@ -2,12 +2,19 @@
 
 Generate text using LLMs with customizable prompts
 
+<div align="center">
+    
 ![gen_nvim](https://github.com/David-Kunz/gen.nvim/assets/1009936/79f17157-9327-484a-811b-2d71ceb8fbe3)
+
+</div>
 
 ## Video
 
+<div align="center">
+    
 [![Local LLMs in Neovim: gen.nvim](https://user-images.githubusercontent.com/1009936/273126287-7b5f2b40-c678-47c5-8f21-edf9516f6034.jpg)](https://youtu.be/FIZt7MinpMY?si=KChSuJJDyrcTdYiM)
 
+</div>
 
 ## Requires
 
