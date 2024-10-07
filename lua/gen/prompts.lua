@@ -1,43 +1,52 @@
 return {
-    Generate = { prompt = "$input", replace = true },
-    Chat = { prompt = "$input" },
-    Summarize = { prompt = "Summarize the following text:\n$text" },
-    Ask = { prompt = "Regarding the following text, $input:\n$text" },
+    Generate = {
+        prompt = "Generate a comprehensive response based on the following input: \"$input\". Ensure that the response is well-structured and relevant to the context.",
+        replace = true
+    },
+    Chat = {
+        prompt = "Engage in a conversation based on the following input: \"$input\". Provide a detailed and thoughtful response that encourages further discussion."
+    },
+    Summarize = {
+        prompt = "Summarize the key points of the following text, capturing its main ideas concisely while retaining important details:\n$text"
+    },
+    Ask = {
+        prompt = "Given the following text, respond to the query \"$input\" with an answer that is both insightful and informative:\n$text"
+    },
     Change = {
-        prompt = "Change the following text, $input, just output the final text without additional quotes around it:\n$text",
-        replace = true,
+        prompt = "Modify the following text based on the instruction \"$input\". Ensure the output is natural, contextually appropriate, and without additional quotes around it:\n$text",
+        replace = true
     },
     Enhance_Grammar_Spelling = {
-        prompt = "Modify the following text to improve grammar and spelling, just output the final text without additional quotes around it:\n$text",
-        replace = true,
+        prompt = "Improve the grammar and spelling of the following text while maintaining its original meaning and tone. Output the final version without adding quotes around it:\n$text",
+        replace = true
     },
     Enhance_Wording = {
-        prompt = "Modify the following text to use better wording, just output the final text without additional quotes around it:\n$text",
-        replace = true,
+        prompt = "Enhance the wording of the following text to make it more engaging, precise, and fluid while preserving its intended meaning. Output the final version without quotes:\n$text",
+        replace = true
     },
     Make_Concise = {
-        prompt = "Modify the following text to make it as simple and concise as possible, just output the final text without additional quotes around it:\n$text",
-        replace = true,
+        prompt = "Refine the following text to be as concise as possible while retaining its core message and clarity. Output the final version without quotes:\n$text",
+        replace = true
     },
     Make_List = {
-        prompt = "Render the following text as a markdown list:\n$text",
-        replace = true,
+        prompt = "Convert the following text into a well-formatted markdown list, breaking it down into clear, organized points:\n$text",
+        replace = true
     },
     Make_Table = {
-        prompt = "Render the following text as a markdown table:\n$text",
-        replace = true,
+        prompt = "Transform the following text into a well-structured markdown table with clear headers and data alignment:\n$text",
+        replace = true
     },
     Review_Code = {
-        prompt = "Review the following code and make concise suggestions:\n```$filetype\n$text\n```",
+        prompt = "Review the following code carefully and provide detailed suggestions for improvement, including best practices, optimization tips, and potential issues:\n```$filetype\n$text\n```"
     },
     Enhance_Code = {
-        prompt = "Enhance the following code, only output the result in format ```$filetype\n...\n```:\n```$filetype\n$text\n```",
+        prompt = "Enhance the following code by improving its efficiency, readability, and overall structure. Ensure the result follows best practices and output the code in the format:\n```$filetype\n...\n```:\n```$filetype\n$text\n```",
         replace = true,
-        extract = "```$filetype\n(.-)```",
+        extract = "```$filetype\n(.-)```"
     },
     Change_Code = {
-        prompt = "Regarding the following code, $input, only output the result in format ```$filetype\n...\n```:\n```$filetype\n$text\n```",
+        prompt = "Modify the following code based on the input \"$input\". Ensure the changes are accurate, efficient, and follow coding best practices. Output the result in the format:\n```$filetype\n...\n```:\n```$filetype\n$text\n```",
         replace = true,
-        extract = "```$filetype\n(.-)```",
-    },
+        extract = "```$filetype\n(.-)```"
+    }
 }
