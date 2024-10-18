@@ -46,7 +46,7 @@ Example with Lazy
         host = "localhost", -- The host running the Ollama service.
         port = "11434", -- The port on which the Ollama service is listening.
         display_mode = "float", -- The display mode. Can be "float" or "split" or "horizontal-split".
-        show_prompt = false, -- Shows the prompt submitted to Ollama.
+        show_prompt = false, -- Shows the prompt submitted to Ollama. Can be true (3 lines) or "full".
         show_model = false, -- Displays which model you are using at the beginning of your chat session.
         no_auto_close = false, -- Never closes the window automatically.
         file = false, -- Write the payload to a temporary file to keep the command short.
