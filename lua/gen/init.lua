@@ -66,7 +66,8 @@ local default_options = {
         end
         table.sort(models)
         return models
-    end
+    end,
+    result_filetype = "markdown"
 }
 for k, v in pairs(default_options) do M[k] = v end
 
@@ -178,7 +179,7 @@ local function create_window(cmd, opts)
     local function setup_split()
         globals.result_buffer = vim.fn.bufnr("%")
         globals.float_win = vim.fn.win_getid()
-        vim.api.nvim_set_option_value("filetype", "markdown",
+        vim.api.nvim_set_option_value("filetype", opts.result_filetype,
                                       {buf = globals.result_buffer})
         vim.api.nvim_set_option_value("buftype", "nofile",
                                       {buf = globals.result_buffer})
@@ -195,7 +196,7 @@ local function create_window(cmd, opts)
         local win_opts = vim.tbl_deep_extend("force", get_window_options(opts),
                                              opts.win_config)
         globals.result_buffer = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_set_option_value("filetype", "markdown",
+        vim.api.nvim_set_option_value("filetype", opts.result_filetype,
                                       {buf = globals.result_buffer})
 
         globals.float_win = vim.api.nvim_open_win(globals.result_buffer, true,
