@@ -157,17 +157,21 @@ local function write_to_buffer(lines)
 
     local text = table.concat(lines or {}, "\n")
 
-    local cursor_pos = vim.api.nvim_win_get_cursor(globals.float_win)
-
     vim.api.nvim_set_option_value("modifiable", true,
                                   {buf = globals.result_buffer})
     vim.api.nvim_buf_set_text(globals.result_buffer, last_row - 1, last_col,
                               last_row - 1, last_col, vim.split(text, "\n"))
 
-    -- Move the cursor to the end of the new lines
-    if cursor_pos[1] == last_row then
-        local new_last_row = last_row + #lines - 1
-        vim.api.nvim_win_set_cursor(globals.float_win, {new_last_row, 0})
+
+    if globals.float_win ~= nil and
+        vim.api.nvim_win_is_valid(globals.float_win) then
+        local cursor_pos = vim.api.nvim_win_get_cursor(globals.float_win)
+
+        -- Move the cursor to the end of the new lines
+        if cursor_pos[1] == last_row then
+            local new_last_row = last_row + #lines - 1
+            vim.api.nvim_win_set_cursor(globals.float_win, {new_last_row, 0})
+        end
     end
 
     vim.api.nvim_set_option_value("modifiable", false,
