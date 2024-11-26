@@ -215,7 +215,7 @@ local function create_window(cmd, opts)
         vim.cmd("vnew gen.nvim")
         setup_split()
     end
-    vim.keymap.set("n", "<esc>", function() vim.fn.jobstop(Job_id) end,
+    vim.keymap.set("n", "<esc>", function() vim.fn.jobstop(globals.job_id) end,
                    {buffer = globals.result_buffer})
     vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>",
                    {buffer = globals.result_buffer})
