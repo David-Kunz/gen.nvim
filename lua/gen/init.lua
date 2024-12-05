@@ -166,9 +166,7 @@ local function write_to_buffer(lines)
     vim.api.nvim_buf_set_text(globals.result_buffer, last_row - 1, last_col,
                               last_row - 1, last_col, vim.split(text, "\n"))
 
-
-    if globals.float_win ~= nil and
-        vim.api.nvim_win_is_valid(globals.float_win) then
+    if globals.float_win ~= nil and vim.api.nvim_win_is_valid(globals.float_win) then
         local cursor_pos = vim.api.nvim_win_get_cursor(globals.float_win)
 
         -- Move the cursor to the end of the new lines
@@ -215,8 +213,9 @@ local function create_window(cmd, opts)
         vim.cmd("vnew gen.nvim")
         setup_split()
     end
-    vim.keymap.set("n", "<esc>", function() vim.fn.jobstop(Job_id) end,
-                   {buffer = globals.result_buffer})
+    vim.keymap.set("n", "<esc>", function()
+        if globals.job_id then vim.fn.jobstop(globals.job_id) end
+    end, {buffer = globals.result_buffer})
     vim.keymap.set("n", M.quit_map, "<cmd>quit<cr>",
                    {buffer = globals.result_buffer})
     vim.keymap.set("n", M.accept_map, function()
@@ -233,7 +232,7 @@ local function create_window(cmd, opts)
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
         vim.api.nvim_buf_set_option(buf, "modifiable", false)
         -- vim.api.nvim_win_close(0, true)
-       M.run_command(cmd, opts)
+        M.run_command(cmd, opts)
     end, {buffer = globals.result_buffer})
 end
 
@@ -406,7 +405,9 @@ M.run_command = function(cmd, opts)
             -- window was closed, so cancel the job
             if not globals.float_win or
                 not vim.api.nvim_win_is_valid(globals.float_win) then
-                if globals.job_id then vim.fn.jobstop(globals.job_id) end
+                if globals.job_id then
+                    vim.fn.jobstop(globals.job_id)
+                end
                 if globals.result_buffer then
                     vim.api.nvim_buf_delete(globals.result_buffer,
                                             {force = true})
@@ -431,7 +432,8 @@ M.run_command = function(cmd, opts)
             end
 
             if partial_data:sub(-1) == "}" then
-                Process_response(partial_data, globals.job_id, opts.json_response)
+                Process_response(partial_data, globals.job_id,
+                                 opts.json_response)
                 partial_data = ""
             end
         end,
@@ -440,7 +442,9 @@ M.run_command = function(cmd, opts)
                 -- window was closed, so cancel the job
                 if not globals.float_win or
                     not vim.api.nvim_win_is_valid(globals.float_win) then
-                    if globals.job_id then vim.fn.jobstop(globals.job_id) end
+                    if globals.job_id then
+                        vim.fn.jobstop(globals.job_id)
+                    end
                     return
                 end
 
