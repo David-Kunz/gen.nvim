@@ -181,7 +181,7 @@ local function write_to_buffer(lines)
 end
 
 local function create_window(cmd, opts)
-    local function setup_split()
+    local function setup_window()
         globals.result_buffer = vim.fn.bufnr("%")
         globals.float_win = vim.fn.win_getid()
         vim.api.nvim_set_option_value("filetype", "markdown",
@@ -201,17 +201,15 @@ local function create_window(cmd, opts)
         local win_opts = vim.tbl_deep_extend("force", get_window_options(opts),
                                              opts.win_config)
         globals.result_buffer = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_set_option_value("filetype", "markdown",
-                                      {buf = globals.result_buffer})
-
         globals.float_win = vim.api.nvim_open_win(globals.result_buffer, true,
                                                   win_opts)
+        setup_window()
     elseif display_mode == "horizontal-split" then
         vim.cmd("split gen.nvim")
-        setup_split()
+        setup_window()
     else
         vim.cmd("vnew gen.nvim")
-        setup_split()
+        setup_window()
     end
     vim.keymap.set("n", "<esc>", function()
         if globals.job_id then vim.fn.jobstop(globals.job_id) end
