@@ -18,7 +18,7 @@ Generate text using LLMs with customizable prompts
 
 ## Requires
 
-- [Ollama](https://ollama.ai/) with an appropriate model, e.g. [`llama3.1`](https://ollama.com/library/llama3.1), [`mistral`](https://ollama.ai/library/mistral), etc.
+- [Ollama](https://ollama.ai/) with an appropriate model, e.g. [`llama3.2`](https://ollama.com/library/llama3.2), [`mistral`](https://ollama.ai/library/mistral), etc.
 - [Curl](https://curl.se/)
 
 ## Install
