@@ -3,7 +3,7 @@
 Generate text using LLMs with customizable prompts
 
 <div align="center">
-    
+
 ![gen_nvim](https://github.com/David-Kunz/gen.nvim/assets/1009936/79f17157-9327-484a-811b-2d71ceb8fbe3)
 
 </div>
@@ -11,7 +11,7 @@ Generate text using LLMs with customizable prompts
 ## Video
 
 <div align="center">
-    
+
 [![Local LLMs in Neovim: gen.nvim](https://user-images.githubusercontent.com/1009936/273126287-7b5f2b40-c678-47c5-8f21-edf9516f6034.jpg)](https://youtu.be/FIZt7MinpMY?si=KChSuJJDyrcTdYiM)
 
 </div>
@@ -62,8 +62,8 @@ Example with Lazy
         -- The executed command must return a JSON object with { response, context }
         -- (context property is optional).
         -- list_models = '<omitted lua function>', -- Retrieves a list of model names
-        debug = false, -- Prints errors and the command which is run.
-        result_filetype = "markdown"  -- Configure filetype of the result buffer
+        result_filetype = "markdown", -- Configure filetype of the result buffer
+        debug = false -- Prints errors and the command which is run.
     }
 },
 ```
