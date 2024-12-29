@@ -52,7 +52,7 @@ local default_options = {
     retry_map = "<c-r>",
     hidden = false,
     command = function(options)
-        return "curl --silent --no-buffer -X POST http://" .. options.host ..
+        return "curl -q --silent --no-buffer -X POST http://" .. options.host ..
                    ":" .. options.port .. "/api/chat -d $body"
     end,
     json_response = true,
@@ -61,7 +61,7 @@ local default_options = {
     init = function() pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
     list_models = function(options)
         local response = vim.fn.systemlist(
-                             "curl --silent --no-buffer http://" .. options.host ..
+                             "curl -q --silent --no-buffer http://" .. options.host ..
                                  ":" .. options.port .. "/api/tags")
         local list = vim.fn.json_decode(response)
         local models = {}
