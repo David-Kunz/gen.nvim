@@ -1,4 +1,4 @@
-# gen.nvim
+# gen-ollama.nvim
 
 Generate text using LLMs with customizable prompts
 
@@ -8,11 +8,13 @@ Generate text using LLMs with customizable prompts
 
 </div>
 
-## Video
+## About this fork
 
-<div align="center">
+This is a **fork** of [David-Kunz/gen.nvim](https://github.com/David-Kunz/gen.nvim) with the following enhancements:
 
-[![Local LLMs in Neovim: gen.nvim](https://user-images.githubusercontent.com/1009936/273126287-7b5f2b40-c678-47c5-8f21-edf9516f6034.jpg)](https://youtu.be/FIZt7MinpMY?si=KChSuJJDyrcTdYiM)
+- Added **multi-language support**, allowing you to set the language for prompts dynamically.
+- Refactored and modularized the codebase for improved maintainability and readability.
+- Introduced a new command, `:TGen`, which uses a special "thinking model" defined in the configuration.
 
 </div>
 
@@ -23,48 +25,44 @@ Generate text using LLMs with customizable prompts
 
 ## Install
 
-Install with your favorite plugin manager, e.g. [lazy.nvim](https://github.com/folke/lazy.nvim)
+Install with your favorite plugin manager, e.g. [lazy.nvim](https://github.com/folke/lazy.nvim).
 
-Example with Lazy
+### Example with Lazy.nvim
 
 ```lua
 -- Minimal configuration
-{ "David-Kunz/gen.nvim" },
+{ "Nonetss/gen-ollama.nvim" },
 
 ```
 
 ```lua
-
 -- Custom Parameters (with defaults)
 {
-    "David-Kunz/gen.nvim",
+    "Nonetss/gen-ollama.nvim",
     opts = {
         model = "mistral", -- The default model to use.
-        quit_map = "q", -- set keymap to close the response window
-        retry_map = "<c-r>", -- set keymap to re-send the current prompt
-        accept_map = "<c-cr>", -- set keymap to replace the previous selection with the last result
+        thinking_model = "deepseek-r1", -- The "thinking model" used by the TGen command.
+        language = "en", -- The default language for prompts (e.g., "en", "es").
+        quit_map = "q", -- Set keymap to close the response window.
+        retry_map = "<c-r>", -- Set keymap to re-send the current prompt.
+        accept_map = "<c-cr>", -- Set keymap to replace the previous selection with the last result.
         host = "localhost", -- The host running the Ollama service.
         port = "11434", -- The port on which the Ollama service is listening.
-        display_mode = "float", -- The display mode. Can be "float" or "split" or "horizontal-split".
+        display_mode = "float", -- The display mode. Can be "float", "split", or "horizontal-split".
         show_prompt = false, -- Shows the prompt submitted to Ollama. Can be true (3 lines) or "full".
         show_model = false, -- Displays which model you are using at the beginning of your chat session.
         no_auto_close = false, -- Never closes the window automatically.
         file = false, -- Write the payload to a temporary file to keep the command short.
-        hidden = false, -- Hide the generation window (if true, will implicitly set `prompt.replace = true`), requires Neovim >= 0.10
+        hidden = false, -- Hide the generation window (if true, will implicitly set `prompt.replace = true`), requires Neovim >= 0.10.
         init = function(options) pcall(io.popen, "ollama serve > /dev/null 2>&1 &") end,
-        -- Function to initialize Ollama
+        -- Function to initialize Ollama.
         command = function(options)
             local body = {model = options.model, stream = true}
             return "curl --silent --no-buffer -X POST http://" .. options.host .. ":" .. options.port .. "/api/chat -d $body"
         end,
-        -- The command for the Ollama service. You can use placeholders $prompt, $model and $body (shellescaped).
-        -- This can also be a command string.
-        -- The executed command must return a JSON object with { response, context }
-        -- (context property is optional).
-        -- list_models = '<omitted lua function>', -- Retrieves a list of model names
-        result_filetype = "markdown", -- Configure filetype of the result buffer
-        debug = false -- Prints errors and the command which is run.
-    }
+        result_filetype = "markdown", -- Configure filetype of the result buffer.
+        debug = false, -- Prints errors and the command which is run.
+    },
 },
 ```
 
@@ -74,17 +72,17 @@ Alternatively, you can call the `setup` function:
 
 ```lua
 require('gen').setup({
-  -- same as above
+  -- Same options as above.
 })
 ```
 
-
+---
 
 ## Usage
 
-Use command `Gen` to generate text based on predefined and customizable prompts.
+Use the `Gen` command to generate text based on predefined and customizable prompts.
 
-Example key maps:
+### Example keymaps
 
 ```lua
 vim.keymap.set({ 'n', 'v' }, '<leader>]', ':Gen<CR>')
@@ -96,28 +94,43 @@ You can also directly invoke it with one of the [predefined prompts](./lua/gen/p
 vim.keymap.set('v', '<leader>]', ':Gen Enhance_Grammar_Spelling<CR>')
 ```
 
-After a conversation begins, the entire context is sent to the LLM. That allows you to ask follow-up questions with
+After a conversation begins, the entire context is sent to the LLM. That allows you to ask follow-up questions with:
 
 ```lua
 :Gen Chat
 ```
 
-and once the window is closed, you start with a fresh conversation.
+Once the window is closed, you start with a fresh conversation.
 
-For prompts which don't automatically replace the previously selected text (`replace = false`), you can replace the selected text with the generated output with `<c-cr>`.
+For prompts that don't automatically replace the previously selected text (`replace = false`), you can replace the selected text with the generated output by pressing `<c-cr>`.
 
-You can select a model from a list of all installed models with
+### New Command: `:TGen`
+
+The `:TGen` command works similarly to `:Gen`, but uses the "thinking model" defined in the configuration (default: `deepseek-r1`). This command is ideal for tasks that require deeper analysis or specialized handling.
+
+Example keymaps:
+
+```lua
+vim.keymap.set({ 'n', 'v' }, '<leader>[', ':TGen<CR>')
+```
+
+### Selecting Models
+
+You can select a model from a list of all installed models with:
 
 ```lua
 require('gen').select_model()
 ```
 
+---
+
 ## Custom Prompts
 
-[All prompts](./lua/gen/prompts.lua) are defined in `require('gen').prompts`, you can enhance or modify them.
+[All prompts](./lua/gen/prompts.lua) are defined in `require('gen').prompts`. You can enhance or modify them.
 
 Example:
-```lua
+
+````lua
 require('gen').prompts['Elaborate_Text'] = {
   prompt = "Elaborate the following text:\n$text",
   replace = true
@@ -127,18 +140,30 @@ require('gen').prompts['Fix_Code'] = {
   replace = true,
   extract = "```$filetype\n(.-)```"
 }
-```
+````
+
+### Prompt Properties
 
 You can use the following properties per prompt:
 
-- `prompt`: (string | function) Prompt either as a string or a function which should return a string. The result can use the following placeholders:
-   - `$text`: Visually selected text or the content of the current buffer
-   - `$filetype`: File type of the buffer (e.g. `javascript`)
-   - `$input`: Additional user input
-   - `$register`: Value of the unnamed register (yanked text)
-- `replace`: `true` if the selected text shall be replaced with the generated output
-- `extract`: Regular expression used to extract the generated result
-- `model`: The model to use, default: `mistral`
+- **`prompt`**: (string | function) The prompt text, with placeholders:
+  - `$text`: Visually selected text or the content of the current buffer.
+  - `$filetype`: The file type of the buffer (e.g., `javascript`).
+  - `$input`: Additional user input.
+  - `$register`: Value of the unnamed register (yanked text).
+- **`replace`**: Whether the selected text should be replaced with the generated output (`true` by default).
+- **`extract`**: A regular expression to extract the generated result.
+- **`model`**: The model to use (default: `"mistral"`).
+
+---
+
+## Enhancements in this fork
+
+- **Multi-language prompts**: Add and switch between languages (e.g., English, Spanish).
+- **Refactored codebase**: The plugin's internals have been reorganized into smaller, more modular files for better maintainability.
+- **New command `:TGen`**: Use a specialized "thinking model" for deeper or more analytical tasks.
+
+---
 
 ## Tip
 
