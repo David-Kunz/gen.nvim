@@ -259,9 +259,11 @@ end
 M.exec = function(options)
     local opts = vim.tbl_deep_extend("force", M, options)
     if opts.hidden then
-        -- the only reasonable thing to do if no output can be seen
         opts.display_mode = 'float' -- uses the `hide` option
-        opts.replace = true
+        if not opts.preview then
+            -- the only reasonable thing to do if no output can be seen
+            opts.replace = true
+        end
     end
 
     if type(opts.init) == 'function' then opts.init(opts) end

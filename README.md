@@ -137,7 +137,7 @@ You can use the following properties per prompt:
    - `$input`: Additional user input
    - `$register`: Value of the unnamed register (yanked text)
 - `replace`: `true` if the selected text shall be replaced with the generated output
-- `preview`: `true` to display virtual text for the generated result. Can't be used `replace` or `hidden` set to `true`
+- `preview`: `true` to display virtual text for the generated result. Can't be used `replace`
 - `extract`: Regular expression used to extract the generated result
 - `model`: The model to use, default: `mistral`
 
