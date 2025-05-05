@@ -1,6 +1,7 @@
 local prompts = require("gen.prompts")
 local M = {}
-
+vim.api.nvim_set_hl(0, 'GenPreviewText', { fg = '#808080' })
+vim.api.nvim_set_hl(0, 'GenPreviewDelete', { fg = '#ff8080' })
 local globals = {}
 local function reset(keep_selection)
     if not keep_selection then
@@ -77,6 +78,12 @@ for k, v in pairs(default_options) do M[k] = v end
 
 M.setup = function(opts) for k, v in pairs(opts) do M[k] = v end end
 
+local function clear_preview_lines()
+    local gen_preview_ns = vim.api.nvim_create_namespace('gen')
+    vim.api.nvim_buf_del_extmark(globals.curr_buffer, gen_preview_ns, 1)
+    vim.api.nvim_buf_del_extmark(globals.curr_buffer, gen_preview_ns, 2)
+end
+
 local function close_window(opts)
     local lines = {}
     if opts.extract then
@@ -107,24 +114,46 @@ local function close_window(opts)
         lines = vim.split(globals.result_string, "\n", {trimempty = true})
     end
     lines = trim_table(lines)
-    vim.api.nvim_buf_set_text(globals.curr_buffer, globals.start_pos[2] - 1,
-                              globals.start_pos[3] - 1, globals.end_pos[2] - 1,
-                              globals.end_pos[3] > globals.start_pos[3] and
-                                  globals.end_pos[3] or globals.end_pos[3] - 1,
-                              lines)
-    -- in case another replacement happens
-    globals.end_pos[2] = globals.start_pos[2] + #lines - 1
-    globals.end_pos[3] = string.len(lines[#lines])
-    if not opts.no_auto_close then
-        if globals.float_win ~= nil then
-            vim.api.nvim_win_hide(globals.float_win)
+    clear_preview_lines()
+    if opts.replace then
+        vim.api.nvim_buf_set_text(globals.curr_buffer, globals.start_pos[2] - 1,
+                globals.start_pos[3] - 1, globals.end_pos[2] - 1,
+                globals.end_pos[3] > globals.start_pos[3] and
+                globals.end_pos[3] or globals.end_pos[3] - 1,
+                lines)
+        -- in case another replacement happens
+        globals.end_pos[2] = globals.start_pos[2] + #lines - 1
+        globals.end_pos[3] = string.len(lines[#lines])
+        if not opts.no_auto_close then
+            if globals.float_win ~= nil then
+                vim.api.nvim_win_hide(globals.float_win)
+            end
+            if globals.result_buffer ~= nil then
+                vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
+            end
+            reset()
         end
-        if globals.result_buffer ~= nil then
-            vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
+    elseif opts.preview then
+        local preview_lines = {}
+        for _, line in ipairs(lines) do
+            table.insert(preview_lines, {{line, "GenPreviewText"}})
         end
-        reset()
+        local gen_preview_ns = vim.api.nvim_create_namespace('gen')
+        vim.api.nvim_buf_set_extmark(globals.curr_buffer, gen_preview_ns, globals.start_pos[2] - 1, 1, {
+            id = 1,
+            sign_text = '-',
+            sign_hl_group = 'GenPreviewDelete',
+            end_line = globals.end_pos[2] - 1
+        })
+        vim.api.nvim_buf_set_extmark(globals.curr_buffer, gen_preview_ns, globals.end_pos[2] - 1, 0, {
+            id = 2,
+            virt_lines = preview_lines,
+            virt_lines_above = false
+        })
     end
+
 end
+
 
 local function get_window_options(opts)
     local cursor = vim.api.nvim_win_get_cursor(0)
@@ -255,9 +284,11 @@ end
 M.exec = function(options)
     local opts = vim.tbl_deep_extend("force", M, options)
     if opts.hidden then
-        -- the only reasonable thing to do if no output can be seen
         opts.display_mode = 'float' -- uses the `hide` option
-        opts.replace = true
+        if not opts.preview then
+            -- the only reasonable thing to do if no output can be seen
+            opts.replace = true
+        end
     end
 
     if type(opts.init) == 'function' then opts.init(opts) end
@@ -477,7 +508,7 @@ M.run_command = function(cmd, opts)
             end
         end,
         on_exit = function(_, b)
-            if b == 0 and opts.replace and globals.result_buffer then
+            if b == 0 and globals.result_buffer and (opts.replace or opts.preview) then
                 close_window(opts)
             end
         end
@@ -492,6 +523,7 @@ M.run_command = function(cmd, opts)
             if globals.result_buffer then
                 vim.api.nvim_buf_delete(globals.result_buffer, {force = true})
             end
+            clear_preview_lines()
             reset(true) -- keep selection in case of subsequent retries
         end
     })
