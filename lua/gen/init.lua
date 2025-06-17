@@ -676,6 +676,7 @@ function Process_response(str, json_response, show_usage)
             if
                 show_usage
                 and result.usage ~= vim.NIL
+                and result.usage
                 and result.usage.prompt_tokens
                 and result.usage.completion_tokens
             then
