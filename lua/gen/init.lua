@@ -33,6 +33,8 @@ local function mark_model_thinking(is_thinking)
     if globals.is_thinking ~= is_thinking then
         globals.is_thinking = is_thinking
         return not is_thinking
+    else
+        return is_thinking
     end
 end
 
@@ -322,8 +324,8 @@ M.exec = function(options)
         text = string.gsub(text, "%$register_([%w*+:/\"])", function(r_name)
             local register = vim.fn.getreg(r_name)
             if not register or register:match("^%s*$") then
-                error("Prompt uses $register_" .. rname .. " but register " ..
-                    rname .. " is empty")
+                error("Prompt uses $register_" .. r_name .. " but register " ..
+                    r_name .. " is empty")
             end
             return register
         end)
@@ -450,7 +452,7 @@ M.run_command = function(cmd, opts)
                 reset()
                 return
             end
-            local stream_response = M.show_thinking == true
+            local stream_response = opts.show_thinking == true
 
             --- @param model_response string
             --- @return string
@@ -547,7 +549,7 @@ M.run_command = function(cmd, opts)
             "---", ""
         })
         if M.show_thinking then
-            write_to_buffer({ "> Model : **" .. opts.model .. "** _thinking..._", "\n" })
+            write_to_buffer({ "## Model : **" .. opts.model .. "** _thinking..._", "\n" })
         end
     end
 
@@ -634,7 +636,7 @@ function Process_response(str, json_response)
                 end
                 text = content
                 if thinking_completed then
-                    write_to_buffer({ "\n---", "# Final outcome:", "\n---" })
+                    write_to_buffer({ "\n---", "## Final outcome:", "---\n" })
                 end
                 globals.context = globals.context or {}
                 globals.context_buffer = globals.context_buffer or ""
